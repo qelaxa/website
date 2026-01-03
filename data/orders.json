@@ -1,0 +1,52 @@
+[
+  {
+    "id": "LQ-2849",
+    "customer": "Sarah Johnson",
+    "email": "sarah.j@email.com",
+    "service": "Wash & Fold (25lbs)",
+    "status": "In Progress",
+    "total": "$55.00",
+    "date": "Dec 30, 2024",
+    "time": "2:30 PM"
+  },
+  {
+    "id": "LQ-2848",
+    "customer": "Mike Chen",
+    "email": "mike.c@email.com",
+    "service": "Student Special",
+    "status": "Picked Up",
+    "total": "$25.00",
+    "date": "Dec 30, 2024",
+    "time": "1:15 PM"
+  },
+  {
+    "id": "LQ-2847",
+    "customer": "Emily Davis",
+    "email": "emily.d@email.com",
+    "service": "Comforter (King)",
+    "status": "Delivered",
+    "total": "$25.00",
+    "date": "Dec 30, 2024",
+    "time": "11:00 AM"
+  },
+  {
+    "id": "LQ-2846",
+    "customer": "James Wilson",
+    "email": "james.w@email.com",
+    "service": "Wash & Fold (40lbs)",
+    "status": "Washing",
+    "total": "$80.00",
+    "date": "Dec 29, 2024",
+    "time": "4:45 PM"
+  },
+  {
+    "id": "LQ-2845",
+    "customer": "Jessica Brown",
+    "email": "jessica.b@email.com",
+    "service": "Dry Cleaning (3)",
+    "status": "Completed",
+    "total": "$45.00",
+    "date": "Dec 29, 2024",
+    "time": "3:00 PM"
+  }
+]

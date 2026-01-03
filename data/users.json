@@ -1,0 +1,20 @@
+[
+  {
+    "id": "admin-1",
+    "email": "admin@leqaxa.com",
+    "name": "Admin User",
+    "password": "admin123",
+    "role": "admin",
+    "createdAt": "2026-01-02T23:15:49.559Z"
+  },
+  {
+    "id": "demo-1",
+    "email": "demo@example.com",
+    "name": "Demo User",
+    "password": "demo123",
+    "phone": "(419) 555-0100",
+    "address": "123 Main St, Toledo, OH",
+    "role": "customer",
+    "createdAt": "2026-01-02T23:15:49.560Z"
+  }
+]

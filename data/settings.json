@@ -1,0 +1,26 @@
+{
+  "business": {
+    "name": "LEQAXA Laundry",
+    "tagline": "Effortlessly Pristine",
+    "email": "hello@leqaxa.com",
+    "phone": "(419) 555-0100",
+    "address": "123 Main St, Toledo, OH 43604"
+  },
+  "pricing": {
+    "washFoldPerLb": "2.00",
+    "dryCleaningBase": "15.00",
+    "expressMultiplier": "1.5",
+    "studentDiscount": "15",
+    "deliveryFee": "5.00",
+    "freeDeliveryThreshold": "50.00"
+  },
+  "delivery": {
+    "standardZips": "43604, 43605, 43606, 43607, 43608, 43609, 43610, 43611, 43612",
+    "extendedZips": "43551, 43560, 43615, 43617"
+  },
+  "notifications": {
+    "emailNewOrders": true,
+    "emailStatusUpdates": true,
+    "smsAlerts": false
+  }
+}

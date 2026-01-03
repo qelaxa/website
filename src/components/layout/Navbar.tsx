@@ -38,16 +38,13 @@ export function Navbar() {
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-                            <div className="relative h-8 w-24 md:h-12 md:w-36">
-                                <Image
-                                    src="/images/leqaxa_logo_new.png"
-                                    alt="LEQAXA"
-                                    fill
-                                    className="object-contain"
-                                    priority
-                                    sizes="(max-width: 768px) 96px, 144px"
-                                />
-                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/images/leqaxa_logo_new.png"
+                                alt="LEQAXA"
+                                style={{ height: '32px', width: 'auto', maxWidth: '100px' }}
+                                className="md:!h-12 md:!max-w-[150px]"
+                            />
                         </Link>
 
                         {/* Desktop Navigation */}

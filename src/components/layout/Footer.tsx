@@ -21,15 +21,12 @@ export function Footer() {
                         {/* Brand Column */}
                         <div className="lg:col-span-1">
                             <Link href="/" className="flex items-center gap-2 mb-6 group">
-                                <div className="relative h-12 w-32">
-                                    <Image
-                                        src="/images/leqaxa_logo_new.png"
-                                        alt="LEQAXA Laundry"
-                                        fill
-                                        className="object-contain"
-                                        sizes="128px"
-                                    />
-                                </div>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src="/images/leqaxa_logo_new.png"
+                                    alt="LEQAXA Laundry"
+                                    style={{ height: '48px', width: 'auto', maxWidth: '140px' }}
+                                />
                             </Link>
                             <p className="text-gray-400 text-sm leading-relaxed mb-6">
                                 Premium laundry concierge service for Northwest Ohio.

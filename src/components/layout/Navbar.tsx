@@ -42,8 +42,8 @@ export function Navbar() {
                             <img
                                 src="/images/leqaxa_logo_new.png"
                                 alt="LEQAXA"
-                                style={{ height: '32px', width: 'auto', maxWidth: '100px' }}
-                                className="md:!h-12 md:!max-w-[150px]"
+                                style={{ height: '40px', width: 'auto', maxWidth: '140px' }}
+                                className="md:!h-14 md:!max-w-[180px]"
                             />
                         </Link>
 

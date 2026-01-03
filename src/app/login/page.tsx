@@ -37,86 +37,116 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="flex flex-col min-h-screen">
             <Navbar />
 
-            <main className="flex-1 flex items-center justify-center py-12 px-4">
-                <Card className="w-full max-w-md border-0 shadow-xl">
-                    <CardHeader className="text-center pb-2">
-                        <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-                        <CardDescription>Sign in to your LEQAXA account</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {error && (
-                                <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
-                                    {error}
-                                </div>
-                            )}
+            <main className="flex-1 flex items-center justify-center py-20 relative overflow-hidden">
+                {/* Background */}
+                <div className="absolute inset-0 gradient-mesh" />
+                <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float-slow" />
+                <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+                <div className="absolute inset-0 pattern-grid opacity-30" />
 
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="you@example.com"
-                                        className="pl-10"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
+                <div className="w-full max-w-md px-4 relative z-10 animate-fade-in-up">
+                    <Card className="glass-card border-0 shadow-elevated-lg overflow-hidden">
+                        <div className="h-1 gradient-primary" />
+                        <CardHeader className="text-center pt-8 pb-4">
+                            <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center mb-4 shadow-lg">
+                                <Lock className="h-7 w-7 text-white" />
                             </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        placeholder="••••••••"
-                                        className="pl-10"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg gap-2"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <>
-                                        Sign In <ArrowRight className="h-4 w-4" />
-                                    </>
+                            <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                                Welcome Back
+                            </CardTitle>
+                            <CardDescription className="text-base text-gray-500">
+                                Sign in to manage your laundry
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pb-8">
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                {error && (
+                                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm animate-fade-in">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                                        {error}
+                                    </div>
                                 )}
-                            </Button>
-                        </form>
 
-                        <div className="mt-6 text-center text-sm text-gray-500">
-                            Don&apos;t have an account?{" "}
-                            <Link href="/register" className="text-teal-600 hover:underline font-medium">
-                                Create one
-                            </Link>
-                        </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Email</Label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-3 top-3.5 h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="you@example.com"
+                                            className="pl-10 h-11 border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                        <div className="mt-6 p-4 rounded-lg bg-gray-50 border border-gray-100">
-                            <p className="text-xs text-gray-500 text-center mb-2">Demo Credentials</p>
-                            <div className="text-xs text-gray-600 space-y-1">
-                                <p><strong>Customer:</strong> demo@example.com / demo123</p>
-                                <p><strong>Admin:</strong> admin@leqaxa.com / admin123</p>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="password" className="text-sm font-semibold text-gray-700">Password</Label>
+                                        <Link href="#" className="text-xs font-medium text-primary hover:text-primary-hover hover:underline">
+                                            Forgot password?
+                                        </Link>
+                                    </div>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-3 top-3.5 h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
+                                        <Input
+                                            id="password"
+                                            type="password"
+                                            placeholder="••••••••"
+                                            className="pl-10 h-11 border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    className="w-full h-11 btn-premium gradient-primary text-white text-base shadow-lg hover:shadow-xl transition-all"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    ) : (
+                                        <>
+                                            Sign In <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </Button>
+                            </form>
+
+                            <div className="mt-8 text-center">
+                                <p className="text-sm text-gray-500">
+                                    Don&apos;t have an account?{" "}
+                                    <Link href="/register" className="text-primary font-bold hover:underline transition-all">
+                                        Create one
+                                    </Link>
+                                </p>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+
+                            <div className="mt-8 pt-6 border-t border-gray-100">
+                                <div className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+                                    <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Demo Credentials</p>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-gray-600 font-mono bg-white inline-block px-2 py-1 rounded border border-gray-200 shadow-sm mx-1">
+                                            demo@example.com
+                                        </p>
+                                        <p className="text-xs text-gray-600 font-mono bg-white inline-block px-2 py-1 rounded border border-gray-200 shadow-sm mx-1">
+                                            demo123
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </main>
 
             <Footer />

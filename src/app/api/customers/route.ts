@@ -1,69 +1,91 @@
 import { NextResponse } from 'next/server';
-import { readData, writeData, Customer, defaultCustomers } from '@/lib/storage';
 
-const CUSTOMERS_FILE = 'customers.json';
-
-export async function GET() {
-    try {
-        const customers = await readData<Customer[]>(CUSTOMERS_FILE, defaultCustomers);
-        return NextResponse.json(customers);
-    } catch (error) {
-        console.error('Error reading customers:', error);
-        return NextResponse.json({ error: 'Failed to load customers' }, { status: 500 });
+// Mock database
+const customers = [
+    {
+        id: 'cust_01',
+        name: 'Sarah Johnson',
+        email: 'sarah.j@example.com',
+        phone: '(419) 555-0123',
+        totalOrders: 12,
+        totalSpend: 450.50,
+        status: 'Active',
+        joinedDate: '2023-01-15'
+    },
+    {
+        id: 'cust_02',
+        name: 'Mike Chen',
+        email: 'mike.chen@example.com',
+        phone: '(419) 555-0124',
+        totalOrders: 5,
+        totalSpend: 125.00,
+        status: 'Active',
+        joinedDate: '2023-03-22'
+    },
+    {
+        id: 'cust_03',
+        name: 'Emily Davis',
+        email: 'emily.d@example.com',
+        phone: '(419) 555-0125',
+        totalOrders: 22,
+        totalSpend: 890.00,
+        status: 'Active',
+        joinedDate: '2022-11-05'
+    },
+    {
+        id: 'cust_04',
+        name: 'James Wilson',
+        email: 'j.wilson@example.com',
+        phone: '(419) 555-0126',
+        totalOrders: 1,
+        totalSpend: 25.00,
+        status: 'Inactive',
+        joinedDate: '2023-09-10'
+    },
+    {
+        id: 'cust_05',
+        name: 'Jessica Brown',
+        email: 'jess.brown@example.com',
+        phone: '(419) 555-0127',
+        totalOrders: 8,
+        totalSpend: 340.25,
+        status: 'Active',
+        joinedDate: '2023-05-30'
     }
+];
+
+export async function GET(request: Request) {
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search')?.toLowerCase();
+
+    let filteredCustomers = customers;
+
+    if (search) {
+        filteredCustomers = customers.filter(c =>
+            c.name.toLowerCase().includes(search) ||
+            c.email.toLowerCase().includes(search)
+        );
+    }
+
+    return NextResponse.json(filteredCustomers);
 }
 
 export async function POST(request: Request) {
-    try {
-        const newCustomer = await request.json() as Customer;
-        const customers = await readData<Customer[]>(CUSTOMERS_FILE, defaultCustomers);
+    const body = await request.json();
+    const newCustomer = {
+        id: `cust_${Math.floor(Math.random() * 1000)}`,
+        ...body,
+        totalOrders: 0,
+        totalSpend: 0,
+        status: 'Active',
+        joinedDate: new Date().toISOString().split('T')[0]
+    };
 
-        // Generate new ID
-        const maxId = Math.max(...customers.map(c => c.id), 0);
-        newCustomer.id = maxId + 1;
+    // In a real app, save to DB here
+    customers.push(newCustomer);
 
-        customers.push(newCustomer);
-        await writeData(CUSTOMERS_FILE, customers);
-        return NextResponse.json({ success: true, customer: newCustomer });
-    } catch (error) {
-        console.error('Error adding customer:', error);
-        return NextResponse.json({ error: 'Failed to add customer' }, { status: 500 });
-    }
-}
-
-export async function PUT(request: Request) {
-    try {
-        const updatedCustomer = await request.json() as Customer;
-        const customers = await readData<Customer[]>(CUSTOMERS_FILE, defaultCustomers);
-        const index = customers.findIndex(c => c.id === updatedCustomer.id);
-
-        if (index === -1) {
-            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-        }
-
-        customers[index] = updatedCustomer;
-        await writeData(CUSTOMERS_FILE, customers);
-        return NextResponse.json({ success: true, message: 'Customer updated successfully' });
-    } catch (error) {
-        console.error('Error updating customer:', error);
-        return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 });
-    }
-}
-
-export async function DELETE(request: Request) {
-    try {
-        const { id } = await request.json() as { id: number };
-        const customers = await readData<Customer[]>(CUSTOMERS_FILE, defaultCustomers);
-        const filtered = customers.filter(c => c.id !== id);
-
-        if (filtered.length === customers.length) {
-            return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-        }
-
-        await writeData(CUSTOMERS_FILE, filtered);
-        return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting customer:', error);
-        return NextResponse.json({ error: 'Failed to delete customer' }, { status: 500 });
-    }
+    return NextResponse.json(newCustomer, { status: 201 });
 }

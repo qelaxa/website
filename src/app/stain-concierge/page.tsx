@@ -124,54 +124,56 @@ export default function StainConciergePage() {
             <main className="flex-1 py-12 relative overflow-hidden">
                 {/* Background */}
                 <div className="absolute inset-0 gradient-mesh" />
-                <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+                <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float-slow" />
+                <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float" />
                 <div className="absolute inset-0 pattern-dots opacity-20" />
 
                 <div className="container mx-auto px-4 max-w-4xl relative z-10">
                     {/* Header */}
-                    <div className="text-center mb-10 animate-fade-in-up">
-                        <Badge className="mb-4 bg-gradient-to-r from-violet-500/10 to-purple-500/10 text-violet-600 border-violet-200">
-                            <Sparkles className="h-3 w-3 mr-1" /> Expert Care
+                    <div className="text-center mb-12 animate-fade-in-up">
+                        <Badge className="mb-4 bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200 px-3 py-1 text-sm">
+                            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Expert Analysis
                         </Badge>
-                        <h1 className="heading-lg text-gray-900 mb-3">
-                            Stain <span className="gradient-text">Concierge</span>
+                        <h1 className="heading-lg text-gray-900 mb-4">
+                            Stain <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-600">Concierge</span>
                         </h1>
-                        <p className="text-gray-600 max-w-lg mx-auto text-lg">
-                            Got a tough stain? Send us a photo and our experts will recommend the best treatment—or let you know if professional care is needed.
+                        <p className="text-gray-600 max-w-lg mx-auto text-lg leading-relaxed">
+                            Upload a photo of your stain. Our experts will analyze it and recommend the perfect treatment plan within 24 hours.
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
                         {/* Upload Section */}
-                        <Card className="border-0 shadow-card glass-card overflow-hidden animate-fade-in-up">
-                            <div className="h-1 bg-gradient-to-r from-primary to-cyan-500" />
+                        <Card className="border-0 shadow-elevated-lg glass-card overflow-hidden animate-fade-in-up hover:shadow-xl transition-all duration-500">
+                            <div className="h-1.5 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
                             <CardHeader className="pb-4">
-                                <CardTitle className="flex items-center gap-3 text-lg">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center shadow-md">
-                                        <Camera className="h-5 w-5 text-white" />
+                                <CardTitle className="flex items-center gap-3 text-xl">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                                        <Camera className="h-6 w-6 text-white" />
                                     </div>
-                                    Upload Photo
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                                        Upload Photo
+                                    </span>
                                 </CardTitle>
-                                <CardDescription>
-                                    Take a clear photo of the stain for best results
+                                <CardDescription className="text-base">
+                                    Take a clear, well-lit photo of the stain
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
                                     {preview ? (
-                                        <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden shadow-inner">
+                                        <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden shadow-inner group">
                                             <Image
                                                 src={preview}
                                                 alt="Stain preview"
                                                 fill
-                                                className="object-cover"
+                                                className="object-cover transition-transform duration-700 group-hover:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                             <Button
                                                 variant="secondary"
                                                 size="sm"
-                                                className="absolute bottom-4 right-4 shadow-lg"
+                                                className="absolute bottom-4 right-4 shadow-lg backdrop-blur-md bg-white/90 hover:bg-white"
                                                 onClick={() => {
                                                     setPreview(null);
                                                     setSelectedFile(null);
@@ -187,24 +189,26 @@ export default function StainConciergePage() {
                                             onDragOver={handleDrag}
                                             onDrop={handleDrop}
                                             className={cn(
-                                                "flex flex-col items-center justify-center aspect-square rounded-2xl cursor-pointer transition-all duration-300",
+                                                "flex flex-col items-center justify-center aspect-square rounded-3xl cursor-pointer transition-all duration-300 relative group overflow-hidden",
                                                 isDragging
-                                                    ? "border-primary bg-primary/5 border-2 border-dashed"
-                                                    : "border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
+                                                    ? "border-violet-500 bg-violet-50/50 border-2 border-dashed shadow-inner"
+                                                    : "border-2 border-dashed border-gray-200 bg-gray-50/50 hover:bg-white hover:border-violet-300 hover:shadow-lg"
                                             )}
                                         >
                                             <div className={cn(
-                                                "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all",
+                                                "w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 shadow-sm",
                                                 isDragging
-                                                    ? "bg-primary text-white scale-110"
-                                                    : "bg-gray-200 text-gray-500"
+                                                    ? "bg-violet-500 text-white scale-110 shadow-violet-500/30"
+                                                    : "bg-white text-violet-500 group-hover:scale-110 group-hover:shadow-md"
                                             )}>
                                                 <Upload className="h-8 w-8" />
                                             </div>
-                                            <span className="text-sm font-medium text-gray-600 mb-1">
-                                                {isDragging ? "Drop your image here" : "Click to upload or drag and drop"}
+                                            <span className="text-lg font-semibold text-gray-900 mb-2">
+                                                {isDragging ? "Drop your image here" : "Drag & Drop or Click"}
                                             </span>
-                                            <span className="text-xs text-gray-400">PNG, JPG up to 10MB</span>
+                                            <span className="text-sm text-gray-500 group-hover:text-violet-600 transition-colors">
+                                                Supports JPG, PNG up to 10MB
+                                            </span>
                                             <Input
                                                 type="file"
                                                 accept="image/*"
@@ -218,46 +222,51 @@ export default function StainConciergePage() {
                         </Card>
 
                         {/* Details Section */}
-                        <Card className="border-0 shadow-card glass-card overflow-hidden animate-fade-in-up delay-100">
-                            <div className="h-1 bg-gradient-to-r from-violet-500 to-purple-600" />
+                        <Card className="border-0 shadow-elevated-lg glass-card overflow-hidden animate-fade-in-up delay-100 hover:shadow-xl transition-all duration-500">
+                            <div className="h-1.5 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500" />
                             <CardHeader className="pb-4">
-                                <CardTitle className="flex items-center gap-3 text-lg">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
-                                        <Droplets className="h-5 w-5 text-white" />
+                                <CardTitle className="flex items-center gap-3 text-xl">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-rose-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
+                                        <Droplets className="h-6 w-6 text-white" />
                                     </div>
-                                    Stain Details
+                                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                                        Stain Details
+                                    </span>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-8">
                                 {/* Stain Type */}
-                                <div className="space-y-3">
-                                    <Label className="font-semibold">What type of stain is it?</Label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                <div className="space-y-4">
+                                    <Label className="text-base font-semibold text-gray-900">What type of stain is it?</Label>
+                                    <div className="grid grid-cols-4 gap-3">
                                         {stainTypes.map((type) => (
                                             <button
                                                 key={type.id}
                                                 onClick={() => setStainType(type.id)}
                                                 className={cn(
-                                                    "relative p-3 rounded-xl border-2 text-center transition-all duration-300 group",
+                                                    "relative p-3 rounded-2xl border transition-all duration-300 group flex flex-col items-center gap-2",
                                                     stainType === type.id
-                                                        ? "border-violet-400 bg-violet-50 shadow-lg"
-                                                        : "border-gray-200 hover:border-violet-200 hover:bg-gray-50"
+                                                        ? "border-violet-500 bg-violet-50 shadow-md transform -translate-y-1"
+                                                        : "border-gray-100 bg-white hover:border-violet-200 hover:shadow-lg hover:-translate-y-1"
                                                 )}
                                             >
-                                                <span className="text-2xl block mb-1 group-hover:scale-110 transition-transform">{type.icon}</span>
-                                                <span className="text-xs text-gray-600 font-medium">{type.name}</span>
+                                                <span className="text-2xl filter drop-shadow-sm group-hover:scale-110 transition-transform duration-300">{type.icon}</span>
+                                                <span className={cn(
+                                                    "text-xs font-medium transition-colors",
+                                                    stainType === type.id ? "text-violet-700" : "text-gray-600"
+                                                )}>{type.name}</span>
                                                 {stainType === type.id && (
-                                                    <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center">
-                                                        <CheckCircle className="h-3 w-3 text-white" />
+                                                    <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-violet-500 flex items-center justify-center shadow-sm animate-scale-in">
+                                                        <CheckCircle className="h-3.5 w-3.5 text-white" />
                                                     </div>
                                                 )}
                                             </button>
                                         ))}
                                     </div>
                                     {stainType && (
-                                        <div className="flex items-center gap-2 animate-fade-in">
-                                            <span className="text-sm text-gray-600">Difficulty:</span>
-                                            <Badge className={difficultyColors[stainTypes.find(t => t.id === stainType)?.difficulty || "Varies"]}>
+                                        <div className="flex items-center gap-2 animate-fade-in bg-gray-50 p-2 rounded-lg border border-gray-100 inline-flex">
+                                            <span className="text-sm font-medium text-gray-500 pl-1">Difficulty:</span>
+                                            <Badge className={cn("text-sm", difficultyColors[stainTypes.find(t => t.id === stainType)?.difficulty || "Varies"])}>
                                                 {stainTypes.find(t => t.id === stainType)?.difficulty}
                                             </Badge>
                                         </div>
@@ -265,50 +274,50 @@ export default function StainConciergePage() {
                                 </div>
 
                                 {/* Fabric Type */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="fabric" className="font-semibold">What type of fabric?</Label>
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="fabric" className="text-base font-semibold text-gray-900">What type of fabric?</Label>
                                     <Input
                                         id="fabric"
                                         value={fabric}
                                         onChange={(e) => setFabric(e.target.value)}
                                         placeholder="e.g., Cotton shirt, Silk blouse, Wool sweater..."
-                                        className="h-12 border-2 focus:border-violet-400"
+                                        className="h-12 border-gray-200 bg-gray-50/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all rounded-xl"
                                     />
                                 </div>
 
                                 {/* Description */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="description" className="font-semibold">Additional Details</Label>
+                                <div className="space-y-2 group">
+                                    <Label htmlFor="description" className="text-base font-semibold text-gray-900">Additional Details</Label>
                                     <Textarea
                                         id="description"
                                         placeholder="How long has the stain been there? Have you tried treating it? Any other details..."
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
                                         rows={3}
-                                        className="border-2 focus:border-violet-400 resize-none"
+                                        className="border-gray-200 bg-gray-50/50 focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all rounded-xl resize-none min-h-[100px]"
                                     />
                                 </div>
 
                                 {/* Warning */}
-                                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200">
-                                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                <div className="flex items-start gap-4 p-4 bg-orange-50/80 backdrop-blur-sm rounded-xl border border-orange-100/50">
+                                    <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0 shadow-sm">
+                                        <AlertTriangle className="h-5 w-5 text-orange-600" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-amber-800">Pro Tip</p>
-                                        <p className="text-sm text-amber-700">Don't heat-dry stained items! Heat can set stains permanently.</p>
+                                        <p className="text-sm font-bold text-orange-800 mb-0.5">Pro Tip</p>
+                                        <p className="text-sm text-orange-700/90 leading-snug">Don't heat-dry stained items! Heat can set stains permanently.</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <Separator className="my-10" />
+                    <Separator className="my-12 opacity-50" />
 
-                    <div className="flex justify-center animate-fade-in-up delay-200">
+                    <div className="flex justify-center animate-fade-in-up delay-200 pb-12">
                         <Button
                             size="lg"
-                            className="h-14 px-10 text-lg gap-3 btn-premium bg-gradient-to-r from-violet-500 to-purple-600 border-0 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group"
+                            className="h-14 px-12 text-lg gap-3 btn-premium bg-gradient-to-r from-violet-600 to-fuchsia-600 border-0 shadow-xl shadow-violet-500/25 hover:shadow-2xl hover:shadow-violet-500/40 hover:-translate-y-1 transition-all duration-300 group rounded-full"
                             onClick={handleSubmit}
                             disabled={!preview || !stainType}
                         >

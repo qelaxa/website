@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ const stepInfo = {
 
 function BookingContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const isStudentMode = searchParams.get("student") === "true";
 
     const [step, setStep] = useState<Step>("location");
@@ -118,6 +119,21 @@ function BookingContent() {
         if (prevIndex >= 0) {
             setStep(steps[prevIndex]);
         }
+    };
+
+    const handleCheckout = () => {
+        const total = calculateTotal();
+        const serviceName = formData.selectedService === "student-special" ? "Student Stuff-a-Bag" :
+            formData.selectedService === "wash-fold" ? "Wash & Fold" : "Specialty Items";
+
+        const params = new URLSearchParams({
+            service: serviceName,
+            price: total.toFixed(2),
+            date: formData.pickupDate || "Scheduled",
+            time: formData.pickupTime ? (formData.pickupTime.charAt(0).toUpperCase() + formData.pickupTime.slice(1)) : "Anytime"
+        });
+
+        router.push(`/checkout?${params.toString()}`);
     };
 
     return (
@@ -559,10 +575,10 @@ function BookingContent() {
                                 <Button
                                     size="lg"
                                     className="h-14 px-8 gap-2 btn-premium bg-gradient-to-r from-orange-500 to-amber-500 border-0 shadow-xl hover:shadow-2xl transition-all text-lg"
-                                    onClick={() => alert("Stripe checkout will be integrated here!")}
+                                    onClick={handleCheckout}
                                 >
                                     <CreditCard className="h-5 w-5" />
-                                    Pay ${calculateTotal().toFixed(2)}
+                                    Proceed to Checkout (${calculateTotal().toFixed(2)})
                                 </Button>
                             </CardFooter>
                         </Card>

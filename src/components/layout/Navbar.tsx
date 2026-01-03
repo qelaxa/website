@@ -36,15 +36,18 @@ export function Navbar() {
             )}>
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between">
-                        {/* Logo */}
-                        <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src="/images/leqaxa_logo_new.png"
-                                alt="LEQAXA"
-                                style={{ height: '40px', width: 'auto', maxWidth: '140px' }}
-                                className="md:!h-14 md:!max-w-[180px]"
-                            />
+                        {/* Logo - STRICTLY CONSTRAINED */}
+                        <Link href="/" className="flex items-center gap-2 group flex-shrink-0 z-50">
+                            <div className="relative h-10 w-32 md:h-14 md:w-48">
+                                <Image
+                                    src="/images/leqaxa_logo_new.png"
+                                    alt="LEQAXA"
+                                    fill
+                                    className="object-contain object-left"
+                                    priority
+                                    sizes="(max-width: 768px) 128px, 192px"
+                                />
+                            </div>
                         </Link>
 
                         {/* Desktop Navigation */}

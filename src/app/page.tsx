@@ -13,19 +13,19 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center overflow-hidden pt-4 md:pt-0">
         {/* Animated Background */}
         <div className="absolute inset-0 gradient-mesh" />
 
-        {/* Decorative Blobs */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float-slow" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-success/10 rounded-full blur-3xl" />
+        {/* Decorative Blobs - Hidden on mobile */}
+        <div className="hidden md:block absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-float-slow" />
+        <div className="hidden md:block absolute bottom-20 right-10 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="hidden md:block absolute top-1/2 left-1/2 w-64 h-64 bg-success/10 rounded-full blur-3xl" />
 
         {/* Grid Pattern */}
-        <div className="absolute inset-0 pattern-grid opacity-50" />
+        <div className="absolute inset-0 pattern-grid opacity-30 md:opacity-50" />
 
-        <div className="container mx-auto px-4 py-20 relative z-10">
+        <div className="container mx-auto px-4 py-8 md:py-20 relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             {/* Text Content */}
             <div className="space-y-8">
@@ -45,7 +45,7 @@ export default function Home() {
                 </span>
               </h1>
 
-              <p className="text-xl text-gray-600 max-w-lg leading-relaxed animate-fade-in-up delay-200">
+              <p className="text-base md:text-xl text-gray-600 max-w-lg leading-relaxed animate-fade-in-up delay-200">
                 We pickup, clean, and deliver your laundry with premium care.
                 Experience the luxury of <span className="font-semibold text-gray-900">5lbs free</span> on your first order.
               </p>
@@ -72,7 +72,7 @@ export default function Home() {
               </div>
 
               {/* Trust Indicators */}
-              <div className="pt-4 flex flex-wrap gap-6 animate-fade-in-up delay-400">
+              <div className="pt-4 flex flex-wrap gap-2 md:gap-6 animate-fade-in-up delay-400">
                 {[
                   { icon: ShieldCheck, text: "Fully Insured", color: "text-emerald-500" },
                   { icon: Sparkles, text: "Eco-Friendly", color: "text-primary" },
@@ -80,9 +80,9 @@ export default function Home() {
                 ].map((item, index) => (
                   <div
                     key={item.text}
-                    className="flex items-center gap-2.5 text-sm text-gray-600 font-medium bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                    className="flex items-center gap-1.5 md:gap-2.5 text-xs md:text-sm text-gray-600 font-medium bg-white/60 backdrop-blur-sm px-2.5 md:px-4 py-1.5 md:py-2 rounded-full border border-gray-100 shadow-sm"
                   >
-                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                    <item.icon className={`h-3 w-3 md:h-4 md:w-4 ${item.color}`} />
                     {item.text}
                   </div>
                 ))}

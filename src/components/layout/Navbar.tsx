@@ -43,7 +43,7 @@ export function Navbar() {
                                 alt="LEQAXA"
                                 width={180}
                                 height={80}
-                                className="h-14 w-auto object-contain"
+                                className="h-10 md:h-14 w-auto object-contain"
                                 priority
                                 unoptimized
                                 quality={100}
@@ -169,10 +169,10 @@ export function Navbar() {
 
                 {/* Menu Panel */}
                 <div className={cn(
-                    "absolute top-0 right-0 h-full w-72 glass-dark pt-20 p-6 transform transition-transform duration-300 ease-out",
+                    "absolute top-0 right-0 h-full w-72 bg-slate-900/95 backdrop-blur-lg pt-16 px-6 pb-6 transform transition-transform duration-300 ease-out overflow-y-auto",
                     isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
                 )}>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 mt-4">
                         {user && (
                             <div className="flex items-center gap-3 px-4 py-3 mb-2 bg-white/10 rounded-lg">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white font-semibold">

@@ -37,13 +37,13 @@ export function Navbar() {
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
-                        <Link href="/" className="flex items-center gap-2 group">
+                        <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
                             <Image
                                 src="/images/leqaxa_logo_new.png"
                                 alt="LEQAXA"
-                                width={180}
-                                height={80}
-                                className="h-10 md:h-14 w-auto object-contain"
+                                width={140}
+                                height={56}
+                                className="h-8 w-auto max-w-[120px] md:h-12 md:max-w-[160px] object-contain"
                                 priority
                                 unoptimized
                                 quality={100}

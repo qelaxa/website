@@ -24,9 +24,9 @@ export function Footer() {
                                 <Image
                                     src="/images/leqaxa_logo_new.png"
                                     alt="LEQAXA Laundry"
-                                    width={200}
-                                    height={100}
-                                    className="h-16 w-auto object-contain"
+                                    width={150}
+                                    height={60}
+                                    className="h-12 w-auto max-w-[140px] object-contain"
                                     unoptimized
                                     quality={100}
                                 />

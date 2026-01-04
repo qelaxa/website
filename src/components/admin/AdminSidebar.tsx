@@ -52,7 +52,7 @@ export function AdminSidebar() {
                     <Link href="/admin" className="flex items-center gap-3">
                         <div className="bg-white rounded-lg p-1.5 shadow-lg shadow-white/5">
                             <Image
-                                src="/images/leqaxa_logo_final.jpg"
+                                src="/images/leqaxa_logo_new.png"
                                 alt="LEQAXA"
                                 width={collapsed ? 40 : 120}
                                 height={collapsed ? 20 : 60}
@@ -60,7 +60,7 @@ export function AdminSidebar() {
                                     "object-contain transition-all",
                                     collapsed ? "h-8 w-8" : "h-10 w-auto"
                                 )}
-                                unoptimized
+                                priority
                             />
                         </div>
                     </Link>

@@ -3,48 +3,58 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Search, UserPlus, Eye, Mail, Phone } from "lucide-react";
+import { createClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
 interface Customer {
     id: string;
-    name: string;
+    full_name: string;
     email: string;
     phone: string;
-    totalOrders: number;
-    totalSpend: number;
-    status: string;
+    created_at: string;
+    role: string;
 }
 
 export default function CustomersPage() {
+    const supabase = createClient();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
         const fetchCustomers = async () => {
+            // Basic implementation: Fetch profiles
             try {
-                const res = await fetch(`/api/customers?search=${searchTerm}`);
-                const data = await res.json();
-                setCustomers(data);
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .neq('role', 'admin') // Optional: only show customers, hide admins
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setCustomers(data || []);
             } catch (error) {
                 console.error("Failed to fetch customers", error);
+                toast.error("Failed to load customers");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        const timer = setTimeout(() => {
-            fetchCustomers();
-        }, 300);
+        fetchCustomers();
+    }, []);
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
+    const filteredCustomers = customers.filter(c =>
+        (c.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (c.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="space-y-8 animate-fade-in-up">
@@ -53,9 +63,6 @@ export default function CustomersPage() {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Customer Management</h1>
                     <p className="text-gray-500 mt-1">View and manage your customer base.</p>
                 </div>
-                <Button className="btn-premium gradient-primary shadow-lg hover:shadow-xl">
-                    <UserPlus className="h-4 w-4 mr-2" /> Add Customer
-                </Button>
             </div>
 
             <Card className="border-0 shadow-elevated-lg glass-card overflow-hidden">
@@ -84,9 +91,8 @@ export default function CustomersPage() {
                                 <TableRow className="bg-gray-50/30 hover:bg-gray-50/30">
                                     <TableHead className="pl-6">Customer</TableHead>
                                     <TableHead>Contact</TableHead>
-                                    <TableHead>Orders</TableHead>
-                                    <TableHead>Total Spend</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead>Joined</TableHead>
+                                    <TableHead>Role</TableHead>
                                     <TableHead className="text-right pr-6">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -97,23 +103,23 @@ export default function CustomersPage() {
                                             Loading customers...
                                         </TableCell>
                                     </TableRow>
-                                ) : customers.length === 0 ? (
+                                ) : filteredCustomers.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-10 text-gray-500">
                                             No customers found.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    customers.map((customer) => (
+                                    filteredCustomers.map((customer) => (
                                         <TableRow key={customer.id} className="group hover:bg-blue-50/10 transition-colors">
                                             <TableCell className="pl-6 font-medium">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 font-bold shadow-sm">
-                                                        {customer.name.charAt(0).toUpperCase()}
+                                                        {(customer.full_name || 'U').charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-gray-900">{customer.name}</div>
-                                                        <div className="text-xs text-gray-400">ID: {customer.id}</div>
+                                                        <div className="font-bold text-gray-900">{customer.full_name || 'Unknown User'}</div>
+                                                        <div className="text-xs text-gray-400 truncate max-w-[150px]">ID: {customer.id}</div>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -122,33 +128,23 @@ export default function CustomersPage() {
                                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                                         <Mail className="h-3 w-3 text-gray-400" /> {customer.email}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                        <Phone className="h-3 w-3 text-gray-400" /> {customer.phone}
-                                                    </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className="bg-white">
-                                                    {customer.totalOrders} Orders
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="font-mono font-medium text-gray-900">
-                                                ${customer.totalSpend.toFixed(2)}
+                                            <TableCell className="text-gray-600">
+                                                {new Date(customer.created_at).toLocaleDateString()}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge className={
-                                                    customer.status === 'Active'
-                                                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-none'
+                                                    customer.role === 'admin'
+                                                        ? 'bg-purple-100 text-purple-700 border-none'
+                                                        : 'bg-emerald-100 text-emerald-700 border-none'
                                                 }>
-                                                    {customer.status}
+                                                    {customer.role || 'Customer'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right pr-6">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 text-gray-400 hover:text-gray-900" asChild>
-                                                    <Link href={`/admin/customers/${customer.id}`}>
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 text-gray-400 hover:text-gray-900" disabled>
+                                                    <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

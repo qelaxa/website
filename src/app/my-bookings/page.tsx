@@ -21,10 +21,13 @@ interface Order {
     time: string;
 }
 
+import { createClient } from "@/lib/supabase";
+
 export default function MyBookingsPage() {
     const { user, isLoading: authLoading } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const supabase = createClient();
 
     useEffect(() => {
         async function fetchOrders() {
@@ -34,13 +37,36 @@ export default function MyBookingsPage() {
             }
 
             try {
-                const res = await fetch("/api/orders");
-                const allOrders = await res.json();
-                // Filter orders for current user
-                const userOrders = allOrders.filter(
-                    (order: Order) => order.email?.toLowerCase() === user.email.toLowerCase()
-                );
-                setOrders(userOrders);
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error("Supabase error:", error);
+                    return;
+                }
+
+                if (data) {
+                    const mappedOrders: Order[] = data.map(order => {
+                        // formats date/time from postgres timestamp
+                        const dateObj = new Date(order.pickup_date || order.created_at);
+                        return {
+                            id: order.id.slice(0, 8), // Short ID for display
+                            customer: user.name,
+                            email: user.email,
+                            service: order.items && Array.isArray(order.items) && order.items.length > 0
+                                ? order.items[0].name || "Laundry Service"
+                                : "Standard Wash & Fold",
+                            status: order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' '),
+                            total: `$${Number(order.total_amount).toFixed(2)}`,
+                            date: dateObj.toLocaleDateString(),
+                            time: dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        };
+                    });
+                    setOrders(mappedOrders);
+                }
             } catch (error) {
                 console.error("Failed to fetch orders:", error);
             } finally {

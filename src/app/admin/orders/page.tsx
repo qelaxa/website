@@ -44,12 +44,30 @@ const statusConfig: Record<string, { color: string; icon: React.ElementType }> =
 
 const statusOptions = ["Confirmed", "Picked Up", "Washing", "In Progress", "Ready", "Out for Delivery", "Delivered", "Completed", "Cancelled"];
 
+import { createClient } from "@/lib/supabase";
+
+// ... imports
+
+interface Order {
+    id: string;
+    customer: string;
+    email: string;
+    service: string;
+    status: string;
+    total: string;
+    date: string;
+    time: string;
+}
+
+// ... statusConfig
+
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const supabase = createClient();
 
     useEffect(() => {
         fetchOrders();
@@ -57,11 +75,43 @@ export default function OrdersPage() {
 
     async function fetchOrders() {
         try {
-            const res = await fetch("/api/orders");
-            const data = await res.json();
-            setOrders(data);
+            const { data, error } = await supabase
+                .from('orders')
+                .select(`
+                    *,
+                    profiles (full_name, email, preferences)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            const mappedOrders: Order[] = (data || []).map((o: any) => {
+                const item = o.items && o.items[0] ? o.items[0] : { name: 'Unknown Service' };
+                // Format preferences for display
+                const prefs = o.profiles?.preferences || {};
+                const prefString = Object.entries(prefs)
+                    .filter(([_, v]) => v !== false && v !== "")
+                    .map(([k, v]) => `${k}: ${v === true ? 'Yes' : v}`)
+                    .join(', ');
+
+                return {
+                    id: o.id,
+                    customer: o.profiles?.full_name || 'Guest',
+                    email: o.profiles?.email || '',
+                    service: item.name,
+                    status: o.status || 'Pending',
+                    total: `$${o.total_amount?.toFixed(2)}`,
+                    date: new Date(o.created_at).toLocaleDateString(),
+                    time: new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    // Add preferences for tooltip
+                    preferences: prefString || 'No specific preferences'
+                };
+            });
+
+            setOrders(mappedOrders);
         } catch (error) {
             console.error("Failed to fetch orders:", error);
+            toast.error("Failed to load orders");
         } finally {
             setLoading(false);
         }
@@ -72,21 +122,17 @@ export default function OrdersPage() {
         setOpenDropdown(null);
 
         try {
-            const order = orders.find(o => o.id === orderId);
-            if (!order) return;
+            const { error } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
 
-            const updatedOrder = { ...order, status: newStatus };
-            const res = await fetch("/api/orders", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedOrder),
-            });
+            if (error) throw error;
 
-            if (res.ok) {
-                setOrders(orders.map(o => o.id === orderId ? updatedOrder : o));
-                toast.success(`Order ${orderId} updated to "${newStatus}"`);
-            }
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            toast.success(`Order updated`);
         } catch (error) {
+            console.error("Update error:", error);
             toast.error("Failed to update order");
         } finally {
             setUpdatingId(null);
@@ -96,8 +142,7 @@ export default function OrdersPage() {
     const filteredOrders = orders.filter(order =>
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.service.toLowerCase().includes(searchTerm.toLowerCase())
+        order.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -172,7 +217,18 @@ export default function OrdersPage() {
                                             </td>
                                             <td className="py-4">
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{order.customer}</p>
+                                                    <div className="group relative">
+                                                        <p className="font-medium text-gray-900 cursor-help underline decoration-dotted decoration-gray-300">
+                                                            {order.customer}
+                                                        </p>
+                                                        {/* Tooltip */}
+                                                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl z-50">
+                                                            <div className="font-bold mb-1 border-b border-gray-700 pb-1">Care Preferences</div>
+                                                            {/* @ts-ignore */}
+                                                            {order.preferences}
+                                                            <div className="absolute bottom-[-4px] left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                                        </div>
+                                                    </div>
                                                     <p className="text-sm text-gray-500">{order.email}</p>
                                                 </div>
                                             </td>

@@ -32,7 +32,7 @@ export default function Home() {
               <div className="animate-fade-in-up">
                 <Badge className="bg-gradient-to-r from-primary/10 to-accent/10 text-primary border-primary/20 px-4 py-2 text-sm font-medium">
                   <Zap className="h-3.5 w-3.5 mr-1.5" />
-                  Now Serving Toledo & BGSU Area
+                  Now Serving Toledo, Bowling Green & Perrysburg
                 </Badge>
               </div>
 

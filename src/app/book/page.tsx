@@ -43,10 +43,19 @@ const stepInfo = {
     review: { icon: CreditCard, title: "Review", color: "from-orange-500 to-amber-500" },
 };
 
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
+
+// ... imports
+
 function BookingContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { user } = useAuth();
+    const supabase = createClient();
     const isStudentMode = searchParams.get("student") === "true";
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [step, setStep] = useState<Step>("location");
     const [formData, setFormData] = useState({
@@ -121,20 +130,50 @@ function BookingContent() {
         }
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => {
+        if (!user) {
+            toast.error("Please sign in to book a pickup");
+            router.push("/login?redirect=/book");
+            return;
+        }
+
+        setIsSubmitting(true);
         const total = calculateTotal();
         const serviceName = formData.selectedService === "student-special" ? "Student Stuff-a-Bag" :
             formData.selectedService === "wash-fold" ? "Wash & Fold" : "Specialty Items";
 
-        const params = new URLSearchParams({
-            service: serviceName,
-            price: total.toFixed(2),
-            date: formData.pickupDate || "Scheduled",
-            time: formData.pickupTime ? (formData.pickupTime.charAt(0).toUpperCase() + formData.pickupTime.slice(1)) : "Anytime"
-        });
+        try {
+            const { error } = await supabase.from('orders').insert({
+                user_id: user.id,
+                status: 'pending',
+                total_amount: total,
+                pickup_date: formData.pickupDate ? new Date(formData.pickupDate).toISOString() : new Date().toISOString(),
+                delivery_address: {
+                    street: formData.address,
+                    zip: formData.zipCode
+                },
+                items: [{
+                    name: serviceName,
+                    type: formData.selectedService,
+                    weight_est: formData.estimatedWeight,
+                    items_map: formData.items,
+                    instructions: formData.specialInstructions
+                }]
+            });
 
-        router.push(`/checkout?${params.toString()}`);
+            if (error) throw error;
+
+            toast.success("Pickup scheduled successfully!");
+            router.push("/my-bookings");
+        } catch (error) {
+            console.error("Booking error:", error);
+            toast.error("Failed to schedule pickup. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
+
+    // ... render ...
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -575,10 +614,19 @@ function BookingContent() {
                                 <Button
                                     size="lg"
                                     className="h-14 px-8 gap-2 btn-premium bg-gradient-to-r from-orange-500 to-amber-500 border-0 shadow-xl hover:shadow-2xl transition-all text-lg"
-                                    onClick={handleCheckout}
+                                    disabled={isSubmitting}
                                 >
-                                    <CreditCard className="h-5 w-5" />
-                                    Proceed to Checkout (${calculateTotal().toFixed(2)})
+                                    {isSubmitting ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                            Processing...
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="h-5 w-5" />
+                                            Proceed to Checkout (${calculateTotal().toFixed(2)})
+                                        </>
+                                    )}
                                 </Button>
                             </CardFooter>
                         </Card>

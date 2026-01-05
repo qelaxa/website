@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -11,44 +11,135 @@ import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, Plus, Edit2, Archive, DollarSign, Shirt, Sparkles, Bed } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, Plus, Edit2, DollarSign, Shirt, Sparkles, Bed, Scissors, Tag } from "lucide-react";
+import { createClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
 
-// Mock Data
-const INITIAL_SERVICES = [
-    { id: "wash-fold", name: "Wash & Fold", category: "Standard", price: 2.00, unit: "/lb", isActive: true, icon: Shirt },
-    { id: "student-special", name: "Student Stuff-a-Bag", category: "Deals", price: 25.00, unit: "flat", isActive: true, icon: Sparkles },
-    { id: "comforter-king", name: "Comforter (King/Queen)", category: "Specialty", price: 20.00, unit: "each", isActive: true, icon: Bed },
-    { id: "comforter-twin", name: "Comforter (Twin/Full)", category: "Specialty", price: 15.00, unit: "each", isActive: true, icon: Bed },
-    { id: "dry-clean-shirt", name: "Dry Clean (Shirt)", category: "Dry Cleaning", price: 8.00, unit: "item", isActive: true, icon: Shirt },
-];
+// Icon mapping
+const iconMap: Record<string, any> = {
+    "Shirt": Shirt,
+    "Sparkles": Sparkles,
+    "Bed": Bed,
+    "Scissors": Scissors,
+    "Tag": Tag
+};
 
 export default function ServiceManagementPage() {
-    const [services, setServices] = useState(INITIAL_SERVICES);
+    const supabase = createClient();
+    const [services, setServices] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [editingService, setEditingService] = useState<any>(null);
+    const [editingService, setEditingService] = useState<any>(null); // null means new service
 
-    const filteredServices = services.filter(s =>
-        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    useEffect(() => {
+        fetchServices();
+    }, []);
+
+    const fetchServices = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('services')
+                .select('*')
+                .order('name');
+
+            if (error) throw error;
+            setServices(data || []);
+        } catch (error) {
+            console.error("Error fetching services:", error);
+            toast.error("Failed to load services");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddNew = () => {
+        setEditingService({
+            name: "",
+            category: "Standard",
+            price: 0,
+            unit: "item",
+            is_active: true,
+            icon: "Shirt"
+        });
+        setIsEditOpen(true);
+    };
 
     const handleEdit = (service: any) => {
         setEditingService({ ...service });
         setIsEditOpen(true);
     };
 
-    const handleSave = () => {
-        setServices(services.map(s => s.id === editingService.id ? editingService : s));
-        setIsEditOpen(false);
-        setEditingService(null);
+    const handleSave = async () => {
+        try {
+            if (editingService.id) {
+                // Update
+                const { error } = await supabase
+                    .from('services')
+                    .update({
+                        name: editingService.name,
+                        price: editingService.price,
+                        unit: editingService.unit,
+                        category: editingService.category,
+                        icon: editingService.icon
+                    })
+                    .eq('id', editingService.id);
+                if (error) throw error;
+                toast.success("Service updated");
+            } else {
+                // Insert
+                const { error } = await supabase
+                    .from('services')
+                    .insert([{
+                        name: editingService.name,
+                        price: editingService.price,
+                        unit: editingService.unit,
+                        category: editingService.category,
+                        icon: editingService.icon,
+                        is_active: true
+                    }]);
+                if (error) throw error;
+                toast.success("Service created");
+            }
+            fetchServices();
+            setIsEditOpen(false);
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to save service");
+        }
     };
 
-    const handleToggleStatus = (id: string) => {
-        setServices(services.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
+    const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+        try {
+            // Optimistic update
+            setServices(services.map(s => s.id === id ? { ...s, is_active: !currentStatus } : s));
+
+            const { error } = await supabase
+                .from('services')
+                .update({ is_active: !currentStatus })
+                .eq('id', id);
+
+            if (error) {
+                // Revert if failed
+                setServices(services.map(s => s.id === id ? { ...s, is_active: currentStatus } : s));
+                throw error;
+            }
+            toast.success(currentStatus ? "Service deactivated" : "Service activated");
+        } catch (error) {
+            toast.error("Failed to update status");
+        }
+    };
+
+    const filteredServices = services.filter(s =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.category && s.category.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const IconComponent = (iconName: string) => {
+        const Icon = iconMap[iconName] || Tag;
+        return <Icon className="h-4 w-4" />;
     };
 
     return (
@@ -58,7 +149,7 @@ export default function ServiceManagementPage() {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Services & Pricing</h1>
                     <p className="text-gray-500 mt-1">Manage your service offerings and pricing structure.</p>
                 </div>
-                <Button className="btn-premium gradient-primary shadow-lg hover:shadow-xl">
+                <Button onClick={handleAddNew} className="btn-premium gradient-primary shadow-lg hover:shadow-xl">
                     <Plus className="h-4 w-4 mr-2" /> Add New Service
                 </Button>
             </div>
@@ -71,7 +162,7 @@ export default function ServiceManagementPage() {
                                 {services.length} Services
                             </Badge>
                             <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100">
-                                {services.filter(s => s.isActive).length} Active
+                                {services.filter(s => s.is_active).length} Active
                             </Badge>
                         </div>
                         <div className="relative w-full sm:w-72 group">
@@ -98,54 +189,64 @@ export default function ServiceManagementPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredServices.map((service) => (
-                                    <TableRow key={service.id} className="group hover:bg-blue-50/10 transition-colors">
-                                        <TableCell className="pl-6 font-medium">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
-                                                    <service.icon className="h-4 w-4" />
-                                                </div>
-                                                {service.name}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="font-normal text-gray-600 bg-white">
-                                                {service.category}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-mono font-medium text-gray-900">
-                                            ${service.price.toFixed(2)} <span className="text-gray-400 text-xs font-sans">{service.unit}</span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Switch
-                                                checked={service.isActive}
-                                                onCheckedChange={() => handleToggleStatus(service.id)}
-                                                className="data-[state=checked]:bg-emerald-500"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right pr-6">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEdit(service)}
-                                                className="h-8 w-8 p-0 text-gray-400 hover:text-primary hover:bg-primary/5"
-                                            >
-                                                <Edit2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">Loading services...</TableCell>
                                     </TableRow>
-                                ))}
+                                ) : filteredServices.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">No services found.</TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredServices.map((service) => (
+                                        <TableRow key={service.id} className="group hover:bg-blue-50/10 transition-colors">
+                                            <TableCell className="pl-6 font-medium">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+                                                        {IconComponent(service.icon)}
+                                                    </div>
+                                                    {service.name}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="font-normal text-gray-600 bg-white">
+                                                    {service.category}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="font-mono font-medium text-gray-900">
+                                                ${service.price.toFixed(2)} <span className="text-gray-400 text-xs font-sans">{service.unit}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Switch
+                                                    checked={service.is_active}
+                                                    onCheckedChange={() => handleToggleStatus(service.id, service.is_active)}
+                                                    className="data-[state=checked]:bg-emerald-500"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-right pr-6">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleEdit(service)}
+                                                    className="h-8 w-8 p-0 text-gray-400 hover:text-primary hover:bg-primary/5"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
                             </TableBody>
                         </Table>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Edit Dialog */}
+            {/* Edit/Add Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Edit Service</DialogTitle>
+                        <DialogTitle>{editingService?.id ? 'Edit Service' : 'Add New Service'}</DialogTitle>
                         <DialogDescription>
                             Make changes to service details and pricing here.
                         </DialogDescription>
@@ -181,6 +282,17 @@ export default function ServiceManagementPage() {
                                     value={editingService.unit}
                                     onChange={(e) => setEditingService({ ...editingService, unit: e.target.value })}
                                     className="col-span-3"
+                                    placeholder="e.g. /lb, item, flat"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="category" className="text-right">Category</Label>
+                                <Input
+                                    id="category"
+                                    value={editingService.category}
+                                    onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
+                                    className="col-span-3"
+                                    placeholder="e.g. Wash & Fold, Dry Cleaning"
                                 />
                             </div>
                         </div>

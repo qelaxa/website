@@ -14,7 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Droplets, ThermometerSun, Shirt, Sparkles, Save, Check, Leaf, Wind, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { createClient } from "@/lib/supabase";
+import toast from "react-hot-toast";
+import { useEffect } from "react";
+// ... other imports
+
 export default function PreferencesPage() {
+    const supabase = createClient();
     const [preferences, setPreferences] = useState({
         detergent: "eco-friendly",
         temperature: "cold",
@@ -26,11 +32,55 @@ export default function PreferencesPage() {
     });
 
     const [saved, setSaved] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const handleSave = () => {
-        // TODO: Save to Supabase
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+    useEffect(() => {
+        async function loadPreferences() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('preferences')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (profile?.preferences && Object.keys(profile.preferences).length > 0) {
+                        setPreferences(prev => ({ ...prev, ...profile.preferences }));
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading preferences:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadPreferences();
+    }, []);
+
+    const handleSave = async () => {
+        setSaved(false);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                toast.error("Please log in to save preferences.");
+                return;
+            }
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ preferences: preferences })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            setSaved(true);
+            toast.success("Preferences saved!");
+            setTimeout(() => setSaved(false), 3000);
+        } catch (error) {
+            console.error("Error saving:", error);
+            toast.error("Failed to save preferences");
+        }
     };
 
     return (

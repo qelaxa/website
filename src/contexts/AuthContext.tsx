@@ -72,22 +72,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initializeAuth();
 
         // Force stop loading after 2 seconds (DEV MODE TIMEOUT)
-        const timeoutId = setTimeout(() => {
-            setIsLoading((prev) => {
-                if (prev) {
-                    console.warn("Auth initialization timed out, forcing DEV ADMIN MODE");
-                    // Auto-login as Admin if network fails on load
-                    setUser({
-                        id: 'dev-user-123',
-                        email: 'dev@admin.com',
-                        name: 'Admin Dev User',
-                        role: 'admin'
-                    });
-                    return false;
-                }
-                return prev;
-            });
-        }, 2000);
+        // ONLY IN DEVELOPMENT: Should not happen in production
+        let timeoutId: NodeJS.Timeout;
+
+        if (process.env.NODE_ENV === 'development') {
+            timeoutId = setTimeout(() => {
+                setIsLoading((prev) => {
+                    if (prev) {
+                        console.warn("Auth initialization timed out, forcing DEV ADMIN MODE");
+                        // Auto-login as Admin if network fails on load
+                        setUser({
+                            id: 'dev-user-123',
+                            email: 'dev@admin.com',
+                            name: 'Admin Dev User',
+                            role: 'admin'
+                        });
+                        return false;
+                    }
+                    return prev;
+                });
+            }, 2000);
+        }
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -116,13 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Create a timeout that resolves to a specific "TIMEOUT" signal
             const timeoutPromise = new Promise<'TIMEOUT'>((resolve) => {
-                setTimeout(() => resolve('TIMEOUT'), 2000); // 2 second timeout for dev
+                setTimeout(() => resolve('TIMEOUT'), 5000); // Increased to 5s to be safe
             });
 
-            // Race real login vs timeout
+            // Race real login vs timeout (Only use timeout race in dev or if absolutely necessary, mainly just await normal login in prod)
+            // But to keep logic simple, we just allow timeout but ONLY Bypass in dev.
+
             const result = await Promise.race([
                 supabase.auth.signInWithPassword({ email, password }),
-                timeoutPromise
+                process.env.NODE_ENV === 'development' ? timeoutPromise : new Promise<never>(() => { }) // Never timeout in prod, let network fail naturally
             ]);
 
             // Handle Timeout / Network Failure by entering DEV MODE

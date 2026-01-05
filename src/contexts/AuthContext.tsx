@@ -96,43 +96,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log("Attempting login via Supabase...");
 
-            const result = await Promise.race([
-                supabase.auth.signInWithPassword({ email, password }),
-                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), process.env.NODE_ENV === 'development' ? 2000 : 30000))
-            ]);
+            // In development, use a short timeout with dev bypass
+            // In production, just await the request normally (no artificial timeout)
+            let data, error;
 
-            // Handle Timeout
-            if (result === 'TIMEOUT') {
-                if (process.env.NODE_ENV === 'development') {
-                    console.warn(" Supabase unreachable. activating DEV BYPASS.");
+            if (process.env.NODE_ENV === 'development') {
+                const result = await Promise.race([
+                    supabase.auth.signInWithPassword({ email, password }),
+                    new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), 2000))
+                ]);
+
+                if (result === 'TIMEOUT') {
+                    console.warn("Supabase unreachable. Activating DEV BYPASS.");
                     toast('Network blocked? Entering Dev Mode (Admin).', { icon: '🚧' });
-                    setUser({
-                        id: 'dev-user-123',
-                        email: email,
-                        name: 'Admin Dev User',
-                        role: 'admin'
-                    });
+                    setUser({ id: 'dev-user-123', email, name: 'Admin Dev User', role: 'admin' });
                     return true;
-                } else {
-                    toast.error("Connection timed out. Please check your network or try again.");
-                    return false;
                 }
+                ({ data, error } = result);
+            } else {
+                // Production: No timeout, just await
+                ({ data, error } = await supabase.auth.signInWithPassword({ email, password }));
             }
-
-            // Handle Normal Response
-            const { data, error } = result;
 
             if (error) {
                 console.error("Login Error:", error);
 
-                // If it's a fetch error (network), also bypass
-                if (error.message.includes('fetch') || error.message.includes('connection')) {
-                    toast('Network error. Entering Dev Mode (Admin).', { icon: '🚧' });
-                    setUser({ id: 'dev-user-123', email: email, name: 'Admin Dev User', role: 'admin' });
-                    return true;
+                // Check for common issues and provide clear messages
+                if (error.message.includes('Email not confirmed')) {
+                    toast.error('Please verify your email before logging in.');
+                } else if (error.message.includes('Invalid login credentials')) {
+                    toast.error('Invalid email or password.');
+                } else {
+                    toast.error(error.message);
                 }
-
-                toast.error(error.message);
                 return false;
             }
 
@@ -141,37 +137,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return true;
         } catch (error: any) {
             console.error("Login Exception:", error);
-            // Fallback for any crash
-            toast('Dev Mode Activated (Admin)', { icon: '🚧' });
-            setUser({ id: 'dev-user-123', email: email, name: 'Admin Dev User', role: 'admin' });
-            return true;
+            if (process.env.NODE_ENV === 'development') {
+                toast('Dev Mode Activated (Admin)', { icon: '🚧' });
+                setUser({ id: 'dev-user-123', email, name: 'Admin Dev User', role: 'admin' });
+                return true;
+            }
+            toast.error('Login failed. Please try again.');
+            return false;
         }
     };
 
     const register = async (name: string, email: string, password: string): Promise<boolean> => {
         try {
-            // Include name in user_metadata so it triggers our handle_new_user function correctly
+            console.log("Attempting registration via Supabase...");
 
-            // 30s Timeout for Registration
-            const result = await Promise.race([
-                supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: name,
-                        },
+            // No artificial timeout - let the request complete naturally
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
                     },
-                }),
-                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), 30000))
-            ]);
-
-            if (result === 'TIMEOUT') {
-                toast.error("Registration timed out - Check your connection.");
-                return false;
-            }
-
-            const { data, error } = result;
+                },
+            });
 
             if (error) {
                 console.error("Registration Error:", error);
@@ -185,21 +174,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (data?.session && data.user) {
                 console.log("Session obtained immediately.");
                 toast.success("Account created! Logging you in...");
-                setUser(mapUser(data.user, { full_name: name, role: 'customer' })); // Optimistic update
+                setUser(mapUser(data.user, { full_name: name, role: 'customer' }));
                 return true;
             }
 
             // CASE 2: Account created but needs Email Verification (Email Confirm ON)
             else if (data?.user && !data.session) {
-                console.log("User created but no session (Verify User).");
-                toast('Account created! Please check your email to verify.', { icon: '📧', duration: 6000 });
-                // Return FALSE so we don't redirect to dashboard yet
-                return false;
+                console.log("User created but no session - email verification required.");
+                toast('Account created! Please check your email to verify, then log in.', { icon: '📧', duration: 8000 });
+                return false; // Don't redirect
             }
 
             return false;
-        } catch (error) {
-            toast.error("Registration failed.");
+        } catch (error: any) {
+            console.error("Registration Exception:", error);
+            toast.error("Registration failed. Please try again.");
             return false;
         }
     };

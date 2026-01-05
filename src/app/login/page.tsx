@@ -29,9 +29,8 @@ export default function LoginPage() {
 
         if (success) {
             router.push("/my-bookings");
-        } else {
-            setError("Invalid email or password");
         }
+        // Error is handled by toast in AuthContext, no need to set a fallback error here
 
         setIsLoading(false);
     };

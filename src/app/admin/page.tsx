@@ -98,6 +98,7 @@ export default function AdminDashboard() {
 
             } catch (error) {
                 console.error("Dashboard data fetch error:", error);
+                setErrorMsg(error instanceof Error ? error.message : JSON.stringify(error));
             } finally {
                 setLoading(false);
             }
@@ -145,10 +146,25 @@ export default function AdminDashboard() {
         },
     ];
 
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex flex-col items-center justify-center min-h-screen gap-4">
                 <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+                <p className="text-gray-500">Loading Dashboard Data...</p>
+                {/* Debug: Show if it takes too long */}
+                <p className="text-xs text-gray-400">Connecting to Supabase...</p>
+            </div>
+        );
+    }
+
+    if (errorMsg) {
+        return (
+            <div className="p-12 text-center text-red-600">
+                <h3 className="text-lg font-bold">Error Loading Dashboard</h3>
+                <p className="font-mono text-sm bg-red-50 p-4 rounded mt-4 text-left inline-block">{errorMsg}</p>
+                <Button onClick={() => window.location.reload()} className="mt-6" variant="outline">Retry</Button>
             </div>
         );
     }

@@ -151,7 +151,7 @@ export default function Home() {
             </div>
             <h2 className="heading-lg text-gray-900 mb-4">Are we in your neighborhood?</h2>
             <p className="text-gray-600 mb-8 text-lg">
-              We serve Toledo, Bowling Green (BGSU), Perrysburg, and surrounding areas.
+              We serve Toledo, University Campuses, Perrysburg, and surrounding areas.
             </p>
           </div>
           <div className="animate-fade-in-up delay-100">
@@ -280,10 +280,10 @@ export default function Home() {
                     icon: null,
                     title: "Student Special",
                     price: "$25 flat",
-                    description: 'BGSU Students get the "Stuff-a-Bag" deal. Must use .edu email.',
+                    description: 'Students get the "Stuff-a-Bag" deal. Must use .edu email.',
                     color: "from-orange-500 to-amber-500",
                     bg: "bg-orange-100",
-                    badge: "BG",
+                    badge: "EDU",
                     isStudent: true
                   },
                 ].map((service, index) => (

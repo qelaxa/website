@@ -59,11 +59,11 @@ const services = [
 
 const studentSpecial = {
     title: "Student Special",
-    description: "Exclusive deal for BGSU students! Fill our bag and pay one flat rate.",
+    description: "Exclusive deal for university students! Fill our bag and pay one flat rate.",
     price: "$25.00",
     priceNote: "Stuff-a-Bag",
     icon: GraduationCap,
-    features: ["Use your .edu email", "Available in Bowling Green area", "Perfect for dorm life"],
+    features: ["Use your .edu email", "Valid Student ID Required", "Perfect for dorm life"],
 };
 
 export default function ServicesPage() {
@@ -182,7 +182,7 @@ export default function ServicesPage() {
                                 </div>
 
                                 <Badge className="mx-auto bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 shadow-lg mb-4 text-sm px-4 py-1">
-                                    🎓 BGSU Exclusive
+                                    🎓 Students Exclusive
                                 </Badge>
                                 <CardTitle className="text-3xl mb-2">{studentSpecial.title}</CardTitle>
                                 <CardDescription className="text-lg max-w-md mx-auto">

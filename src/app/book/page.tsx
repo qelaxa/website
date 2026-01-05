@@ -340,7 +340,7 @@ function BookingContent() {
                                             <Label htmlFor="student-special" className="cursor-pointer flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="font-bold text-gray-900">Student Stuff-a-Bag</span>
-                                                    <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0">BGSU Special</Badge>
+                                                    <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0">Student Special</Badge>
                                                 </div>
                                                 <p className="text-sm text-gray-500">Fill our bag for one flat rate</p>
                                             </Label>

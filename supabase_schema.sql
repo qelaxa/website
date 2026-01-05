@@ -83,6 +83,7 @@ $$ language plpgsql security definer;
 -- 5. CARE PREFERENCES (Added to Profiles)
 -- We will store preferences as a JSONB column on the profiles table
 alter table public.profiles add column if not exists preferences jsonb default '{}'::jsonb;
+alter table public.profiles add column if not exists address jsonb default '{}'::jsonb;
 
 -- 6. STAIN CONCIERGE REQUESTS
 create table if not exists public.stain_requests (

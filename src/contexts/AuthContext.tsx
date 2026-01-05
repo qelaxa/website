@@ -173,8 +173,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             const { data, error } = result;
 
-            const { data, error } = result;
-
             if (error) {
                 console.error("Registration Error:", error);
                 toast.error(`Error: ${error.message}`);
@@ -184,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log("Registration Result:", data);
 
             // CASE 1: Account created AND Logged In (Email Confirm OFF)
-            if (data?.session) {
+            if (data?.session && data.user) {
                 console.log("Session obtained immediately.");
                 toast.success("Account created! Logging you in...");
                 setUser(mapUser(data.user, { full_name: name, role: 'customer' })); // Optimistic update

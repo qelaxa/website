@@ -174,15 +174,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const register = async (name: string, email: string, password: string): Promise<boolean> => {
         try {
             // Include name in user_metadata so it triggers our handle_new_user function correctly
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: name,
+
+            // 15s Timeout for Registration
+            const result = await Promise.race([
+                supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: name,
+                        },
                     },
-                },
-            });
+                }),
+                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), 15000))
+            ]);
+
+            if (result === 'TIMEOUT') {
+                toast.error("Registration timed out - Check your connection.");
+                return false;
+            }
+
+            const { data, error } = result;
 
             if (error) {
                 toast.error(error.message);

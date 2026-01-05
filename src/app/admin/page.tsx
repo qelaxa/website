@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Package, Users, Activity, TrendingUp, Search, MoreHorizontal, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
+import { DollarSign, Package, Users, Activity, TrendingUp, Search, MoreHorizontal, ArrowUpRight, ArrowDownRight, Loader2, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from 'next/link';
 
@@ -17,9 +17,12 @@ export default function AdminDashboard() {
     const supabase = createClient();
     const [statsData, setStatsData] = useState({
         revenue: 0,
+        revenueTrend: 0,
         activeOrders: 0,
-        newCustomers: 0,
-        avgTurnaround: "24h" // Placeholder for now
+        ordersTrend: 0,
+        totalCustomers: 0,
+        customersTrend: 0,
+        pendingStains: 0
     });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,30 +30,60 @@ export default function AdminDashboard() {
     useEffect(() => {
         async function fetchDashboardData() {
             try {
-                // 1. Fetch Orders for Revenue & Active Count & Recent List
+                // 1. Fetch Orders (Last 30 days for trends)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
                 const { data: orders, error: ordersError } = await supabase
                     .from('orders')
                     .select('*, profiles(full_name)')
+                    .gte('created_at', thirtyDaysAgo.toISOString())
                     .order('created_at', { ascending: false });
 
                 if (ordersError) throw ordersError;
 
                 // 2. Fetch Customers Count
-                const { count: customerCount, error: profileError } = await supabase
+                const { count: customerCount } = await supabase
                     .from('profiles')
                     .select('*', { count: 'exact', head: true });
 
-                if (profileError) throw profileError;
+                // 3. Fetch Pending Stains
+                const { count: stainsCount } = await supabase
+                    .from('stain_requests')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'pending');
 
-                // Calculate Stats
-                const totalRevenue = (orders || []).reduce((sum, order) => sum + (order.total_amount || 0), 0);
+                // --- Calculations ---
+                const now = new Date();
+                const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+                // Revenue
+                const thisWeekOrders = orders?.filter(o => new Date(o.created_at) > sevenDaysAgo) || [];
+                const lastWeekOrders = orders?.filter(o => {
+                    const d = new Date(o.created_at);
+                    return d <= sevenDaysAgo && d > fourteenDaysAgo;
+                }) || [];
+
+                const thisWeekRevenue = thisWeekOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                const lastWeekRevenue = lastWeekOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+                const revTrend = lastWeekRevenue === 0 ? (thisWeekRevenue > 0 ? 100 : 0) : ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100;
+
+                // Active Orders
                 const activeCount = (orders || []).filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length;
 
+                // Orders Trend
+                const ordersTrend = lastWeekOrders.length === 0 ? (thisWeekOrders.length > 0 ? 100 : 0) : ((thisWeekOrders.length - lastWeekOrders.length) / lastWeekOrders.length) * 100;
+
                 setStatsData({
-                    revenue: totalRevenue,
+                    revenue: thisWeekRevenue, // Showing weekly revenue for now, or could show total
+                    revenueTrend: revTrend,
                     activeOrders: activeCount,
-                    newCustomers: customerCount || 0,
-                    avgTurnaround: "20h" // Hardcoded for now
+                    ordersTrend: ordersTrend,
+                    totalCustomers: customerCount || 0,
+                    customersTrend: 100, // Placeholder
+                    pendingStains: stainsCount || 0
                 });
 
                 // Map Recent Orders (Top 5)
@@ -74,10 +107,42 @@ export default function AdminDashboard() {
     }, []);
 
     const stats = [
-        { title: "Total Revenue", value: `$${statsData.revenue.toLocaleString()}`, change: "+12.5%", trend: "up", icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { title: "Active Orders", value: statsData.activeOrders.toString(), change: "+4", trend: "up", icon: Package, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { title: "Total Customers", value: statsData.newCustomers.toString(), change: "+22.4%", trend: "up", icon: Users, color: "text-violet-500", bg: "bg-violet-500/10" },
-        { title: "Avg. Turnaround", value: statsData.avgTurnaround, change: "-2h", trend: "down", icon: Activity, color: "text-orange-500", bg: "bg-orange-500/10" },
+        {
+            title: "Weekly Revenue",
+            value: `$${statsData.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            change: `${statsData.revenueTrend > 0 ? '+' : ''}${statsData.revenueTrend.toFixed(1)}%`,
+            trend: statsData.revenueTrend >= 0 ? "up" : "down",
+            icon: DollarSign,
+            color: "text-emerald-500",
+            bg: "bg-emerald-500/10"
+        },
+        {
+            title: "Active Orders",
+            value: statsData.activeOrders.toString(),
+            change: `${statsData.ordersTrend > 0 ? '+' : ''}${statsData.ordersTrend.toFixed(1)}%`,
+            trend: statsData.ordersTrend >= 0 ? "up" : "down",
+            icon: Package,
+            color: "text-blue-500",
+            bg: "bg-blue-500/10"
+        },
+        {
+            title: "Total Customers",
+            value: statsData.totalCustomers.toString(),
+            change: "Total",
+            trend: "up",
+            icon: Users,
+            color: "text-violet-500",
+            bg: "bg-violet-500/10"
+        },
+        {
+            title: "Pending Stains",
+            value: statsData.pendingStains.toString(),
+            change: "Action Required",
+            trend: "up",
+            icon: Sparkles,
+            color: statsData.pendingStains > 0 ? "text-orange-500" : "text-gray-400",
+            bg: statsData.pendingStains > 0 ? "bg-orange-500/10" : "bg-gray-100"
+        },
     ];
 
     if (loading) {
@@ -90,10 +155,9 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-8 animate-fade-in-up">
-            {/* ... rest of the JSX using `stats` and `recentOrders` variables ... */}
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-                {/* ... */}
+
             </div>
 
             {/* Stats Grid */}
@@ -101,7 +165,6 @@ export default function AdminDashboard() {
                 {stats.map((stat, i) => (
                     <Card key={stat.title} className="glass-card border-0 shadow-sm hover:shadow-elevated-lg transition-all duration-300 group overflow-hidden" style={{ animationDelay: `${i * 100}ms` }}>
                         <CardContent className="p-6 relative">
-                            {/* ... card content same as before but using dynamic stat values ... */}
                             <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}>
                                 <stat.icon className={`h-24 w-24 ${stat.color}`} />
                             </div>
@@ -109,9 +172,8 @@ export default function AdminDashboard() {
                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.bg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
                                 </div>
-                                {/* Trend Badge - keeping hardcoded for MVP */}
-                                <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100 gap-1 px-2.5 py-1">
-                                    <ArrowUpRight className="h-3 w-3" />
+                                <Badge variant="outline" className={`${stat.trend === 'up' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-red-600 bg-red-50 border-red-100'} gap-1 px-2.5 py-1`}>
+                                    {stat.trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                                     {stat.change}
                                 </Badge>
                             </div>

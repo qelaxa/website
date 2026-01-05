@@ -25,11 +25,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const supabase = createClient();
+    // Initialize Supabase client once per component lifecycle
+    const [supabase] = useState(() => createClient());
 
     // Map Supabase user to our internal User interface
     const mapUser = (sbUser: SupabaseUser, profileData: any = null): User => {
@@ -71,29 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Initialize with safety timeout
         initializeAuth();
 
-        // Force stop loading after 2 seconds (DEV MODE TIMEOUT)
-        // ONLY IN DEVELOPMENT: Should not happen in production
-        let timeoutId: NodeJS.Timeout;
-
-        if (process.env.NODE_ENV === 'development') {
-            timeoutId = setTimeout(() => {
-                setIsLoading((prev) => {
-                    if (prev) {
-                        console.warn("Auth initialization timed out, forcing DEV ADMIN MODE");
-                        // Auto-login as Admin if network fails on load
-                        setUser({
-                            id: 'dev-user-123',
-                            email: 'dev@admin.com',
-                            name: 'Admin Dev User',
-                            role: 'admin'
-                        });
-                        return false;
-                    }
-                    return prev;
-                });
-            }, 2000);
-        }
-
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
@@ -111,9 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return () => {
             subscription.unsubscribe();
-            clearTimeout(timeoutId);
         };
-    }, []);
+    }, [supabase]);
 
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
@@ -121,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             const result = await Promise.race([
                 supabase.auth.signInWithPassword({ email, password }),
-                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), process.env.NODE_ENV === 'development' ? 2000 : 15000))
+                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), process.env.NODE_ENV === 'development' ? 2000 : 30000))
             ]);
 
             // Handle Timeout
@@ -175,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             // Include name in user_metadata so it triggers our handle_new_user function correctly
 
-            // 15s Timeout for Registration
+            // 30s Timeout for Registration
             const result = await Promise.race([
                 supabase.auth.signUp({
                     email,
@@ -186,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         },
                     },
                 }),
-                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), 15000))
+                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), 30000))
             ]);
 
             if (result === 'TIMEOUT') {

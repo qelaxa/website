@@ -119,32 +119,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log("Attempting login via Supabase...");
 
-            // Create a timeout that resolves to a specific "TIMEOUT" signal
-            const timeoutPromise = new Promise<'TIMEOUT'>((resolve) => {
-                setTimeout(() => resolve('TIMEOUT'), 5000); // Increased to 5s to be safe
-            });
-
-            // Race real login vs timeout (Only use timeout race in dev or if absolutely necessary, mainly just await normal login in prod)
-            // But to keep logic simple, we just allow timeout but ONLY Bypass in dev.
-
             const result = await Promise.race([
                 supabase.auth.signInWithPassword({ email, password }),
-                process.env.NODE_ENV === 'development' ? timeoutPromise : new Promise<never>(() => { }) // Never timeout in prod, let network fail naturally
+                new Promise<'TIMEOUT'>((resolve) => setTimeout(() => resolve('TIMEOUT'), process.env.NODE_ENV === 'development' ? 2000 : 15000))
             ]);
 
-            // Handle Timeout / Network Failure by entering DEV MODE
+            // Handle Timeout
             if (result === 'TIMEOUT') {
-                console.warn(" Supabase unreachable. activating DEV BYPASS.");
-                toast('Network blocked? Entering Dev Mode (Admin).', { icon: '🚧' });
-
-                // Manually set mock user
-                setUser({
-                    id: 'dev-user-123',
-                    email: email,
-                    name: 'Admin Dev User',
-                    role: 'admin' // Grant Admin Access for testing
-                });
-                return true;
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn(" Supabase unreachable. activating DEV BYPASS.");
+                    toast('Network blocked? Entering Dev Mode (Admin).', { icon: '🚧' });
+                    setUser({
+                        id: 'dev-user-123',
+                        email: email,
+                        name: 'Admin Dev User',
+                        role: 'admin'
+                    });
+                    return true;
+                } else {
+                    toast.error("Connection timed out. Please check your network or try again.");
+                    return false;
+                }
             }
 
             // Handle Normal Response

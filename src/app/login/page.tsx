@@ -131,19 +131,7 @@ export default function LoginPage() {
                                 </p>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-gray-100">
-                                <div className="p-4 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
-                                    <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Demo Credentials</p>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600 font-mono bg-white inline-block px-2 py-1 rounded border border-gray-200 shadow-sm mx-1">
-                                            demo@example.com
-                                        </p>
-                                        <p className="text-xs text-gray-600 font-mono bg-white inline-block px-2 py-1 rounded border border-gray-200 shadow-sm mx-1">
-                                            demo123
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+
                         </CardContent>
                     </Card>
                 </div>

@@ -173,18 +173,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             const { data, error } = result;
 
+            const { data, error } = result;
+
             if (error) {
-                toast.error(error.message);
+                console.error("Registration Error:", error);
+                toast.error(`Error: ${error.message}`);
                 return false;
             }
 
-            // If email confirmation is enabled in Supabase (default)
+            console.log("Registration Result:", data);
+
+            // CASE 1: Account created AND Logged In (Email Confirm OFF)
             if (data?.session) {
-                toast.success("Account created successfully!");
+                console.log("Session obtained immediately.");
+                toast.success("Account created! Logging you in...");
+                setUser(mapUser(data.user, { full_name: name, role: 'customer' })); // Optimistic update
                 return true;
-            } else if (data?.user && !data.session) {
-                toast.success("Please check your email to verify your account.");
-                return true;
+            }
+
+            // CASE 2: Account created but needs Email Verification (Email Confirm ON)
+            else if (data?.user && !data.session) {
+                console.log("User created but no session (Verify User).");
+                toast('Account created! Please check your email to verify.', { icon: '📧', duration: 6000 });
+                // Return FALSE so we don't redirect to dashboard yet
+                return false;
             }
 
             return false;

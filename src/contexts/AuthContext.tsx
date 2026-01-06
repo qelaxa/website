@@ -76,6 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log("Auth state changed:", event, session?.user?.email);
 
+            // FORCED REDIRECT FIRST (before any async operations that might hang)
+            if (event === 'SIGNED_IN' && session?.user && typeof window !== 'undefined') {
+                const currentPath = window.location.pathname;
+                console.log("SIGNED_IN detected, current path:", currentPath);
+                if (currentPath === '/login' || currentPath === '/register') {
+                    console.log("Forcing redirect to /my-bookings via window.location NOW");
+                    // Use replace to not add to history, and do it immediately
+                    window.location.replace('/my-bookings');
+                    return; // Exit early, don't wait for profile fetch
+                }
+            }
+
             if (session?.user) {
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
@@ -92,15 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const mappedUser = mapUser(session.user, profile);
                 console.log("Mapped user:", mappedUser);
                 setUser(mappedUser);
-
-                // FORCED REDIRECT: If we just signed in and we're on login/register, redirect immediately
-                if (event === 'SIGNED_IN' && typeof window !== 'undefined') {
-                    const currentPath = window.location.pathname;
-                    if (currentPath === '/login' || currentPath === '/register') {
-                        console.log("Forcing redirect to /my-bookings via window.location");
-                        window.location.href = '/my-bookings';
-                    }
-                }
             } else {
                 setUser(null);
             }

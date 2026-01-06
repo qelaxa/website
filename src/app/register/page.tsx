@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,8 +19,15 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
-    const { register } = useAuth();
+    const { register, user } = useAuth();
     const router = useRouter();
+
+    // Auto-redirect if user becomes logged in (handles async auth state updates)
+    useEffect(() => {
+        if (user && !isLoading) {
+            router.push("/my-bookings");
+        }
+    }, [user, isLoading, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

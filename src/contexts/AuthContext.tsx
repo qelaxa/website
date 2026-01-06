@@ -161,8 +161,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log("Attempting registration via Supabase...");
 
-            // No artificial timeout - let the request complete naturally
-            const { data, error } = await supabase.auth.signUp({
+            // Use a 60s timeout for registration
+            const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
+                setTimeout(() => resolve('TIMEOUT'), 60000)
+            );
+
+            const signUpPromise = supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -171,6 +175,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     },
                 },
             });
+
+            const result = await Promise.race([signUpPromise, timeoutPromise]);
+
+            // Handle timeout - but check if user was actually created
+            if (result === 'TIMEOUT') {
+                console.warn("Registration request timed out after 60s. Checking if user was created...");
+
+                // Try to sign in - if it works, registration succeeded
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (signInData?.session) {
+                    console.log("Registration succeeded (user exists). Logging in...");
+                    toast.success("Account created! Welcome!");
+                    return true;
+                } else {
+                    console.log("User not found after timeout. Registration may have failed.");
+                    toast.error("Registration timed out. Please try again.");
+                    return false;
+                }
+            }
+
+            const { data, error } = result;
 
             if (error) {
                 console.error("Registration Error:", error);

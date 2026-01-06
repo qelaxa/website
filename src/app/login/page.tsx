@@ -22,10 +22,12 @@ export default function LoginPage() {
 
     // Auto-redirect if user becomes logged in (handles async auth state updates)
     useEffect(() => {
-        if (user && !isLoading) {
+        console.log("Login page - user state:", user?.email);
+        if (user) {
+            console.log("User detected, redirecting to /my-bookings");
             router.push("/my-bookings");
         }
-    }, [user, isLoading, router]);
+    }, [user, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

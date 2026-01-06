@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log("Auth state changed:", event, session?.user?.email);
+
             if (session?.user) {
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
@@ -91,6 +92,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const mappedUser = mapUser(session.user, profile);
                 console.log("Mapped user:", mappedUser);
                 setUser(mappedUser);
+
+                // FORCED REDIRECT: If we just signed in and we're on login/register, redirect immediately
+                if (event === 'SIGNED_IN' && typeof window !== 'undefined') {
+                    const currentPath = window.location.pathname;
+                    if (currentPath === '/login' || currentPath === '/register') {
+                        console.log("Forcing redirect to /my-bookings via window.location");
+                        window.location.href = '/my-bookings';
+                    }
+                }
             } else {
                 setUser(null);
             }

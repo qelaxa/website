@@ -74,13 +74,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log("Auth state changed:", event, session?.user?.email);
             if (session?.user) {
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', session.user.id)
                     .single();
-                setUser(mapUser(session.user, profile));
+
+                console.log("Profile fetch result:", { profile, profileError, userId: session.user.id });
+
+                if (profileError) {
+                    console.error("Failed to fetch profile:", profileError);
+                }
+
+                const mappedUser = mapUser(session.user, profile);
+                console.log("Mapped user:", mappedUser);
+                setUser(mappedUser);
             } else {
                 setUser(null);
             }

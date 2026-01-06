@@ -33,15 +33,25 @@ export default function LoginPage() {
         e.preventDefault();
         setError("");
         setIsLoading(true);
+        console.log("Login form submitted, calling login()...");
 
-        const success = await login(email, password);
+        try {
+            const success = await login(email, password);
+            console.log("Login returned:", success);
 
-        if (success) {
-            router.push("/my-bookings");
+            if (success) {
+                console.log("Login successful, pushing to /my-bookings...");
+                router.push("/my-bookings");
+                console.log("router.push called");
+            } else {
+                console.log("Login returned false");
+            }
+        } catch (err) {
+            console.error("handleSubmit error:", err);
+        } finally {
+            console.log("Setting isLoading to false");
+            setIsLoading(false);
         }
-        // Error is handled by toast in AuthContext, no need to set a fallback error here
-
-        setIsLoading(false);
     };
 
     return (

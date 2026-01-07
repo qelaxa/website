@@ -232,9 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             console.log("Attempting registration via Supabase...");
 
-            // Use a 60s timeout for registration
+            // Use a 10s timeout for registration
             const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
-                setTimeout(() => resolve('TIMEOUT'), 60000)
+                setTimeout(() => resolve('TIMEOUT'), 10000)
             );
 
             const signUpPromise = supabase.auth.signUp({
@@ -243,38 +243,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 options: {
                     data: {
                         full_name: name,
+                        role: 'customer', // Store role in metadata
                     },
                 },
             });
 
             const result = await Promise.race([signUpPromise, timeoutPromise]);
 
-            // Handle timeout - but check if user was actually created
+            // Handle timeout
             if (result === 'TIMEOUT') {
-                console.warn("Registration request timed out after 60s. Checking if user was created...");
-
-                // Try to sign in - if it works, registration succeeded
-                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
+                console.warn("Registration request timed out after 10s");
+                toast('Registration is taking longer than expected. Your account may have been created. Please try to log in or check your email.', {
+                    icon: '⏳',
+                    duration: 8000
                 });
-
-                if (signInData?.session) {
-                    console.log("Registration succeeded (user exists). Logging in...");
-                    toast.success("Account created! Welcome!");
-                    return true;
-                } else {
-                    console.log("User not found after timeout. Registration may have failed.");
-                    toast.error("Registration timed out. Please try again.");
-                    return false;
-                }
+                return false;
             }
 
             const { data, error } = result;
 
             if (error) {
                 console.error("Registration Error:", error);
-                toast.error(`Error: ${error.message}`);
+                // Handle specific error cases
+                if (error.message.includes('already registered')) {
+                    toast.error("This email is already registered. Please sign in instead.");
+                } else {
+                    toast.error(`Registration failed: ${error.message}`);
+                }
                 return false;
             }
 
@@ -282,26 +277,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // CASE 1: Account created AND Logged In (Email Confirm OFF)
             if (data?.session && data.user) {
-                console.log("Session obtained immediately.");
-                toast.success("Account created! Logging you in...");
-                setUser(mapUser(data.user, { full_name: name, role: 'customer' }));
+                console.log("Session obtained immediately - email confirmation is OFF");
+                toast.success("Account created! Welcome to LEQAXA!");
+                // User will be set by onAuthStateChange
                 return true;
             }
 
             // CASE 2: Account created but needs Email Verification (Email Confirm ON)
-            else if (data?.user && !data.session) {
-                console.log("User created but no session - email verification required.");
-                toast('Account created! Please check your email to verify, then log in.', { icon: '📧', duration: 8000 });
-                return false; // Don't redirect
+            if (data?.user && !data.session) {
+                console.log("User created but no session - email verification may be required");
+                toast.success("Account created! Please check your email to verify, then log in.", {
+                    icon: '📧',
+                    duration: 10000
+                });
+                return true; // Registration was successful
+            }
+
+            // CASE 3: User already exists (sometimes returns without error)
+            if (data?.user && data.user.identities && data.user.identities.length === 0) {
+                console.log("User already exists");
+                toast.error("This email is already registered. Please sign in instead.");
+                return false;
             }
 
             return false;
         } catch (error: any) {
             console.error("Registration Exception:", error);
-            toast.error("Registration failed. Please try again.");
+            toast.error("Registration failed. Please check your connection and try again.");
             return false;
         }
     };
+
 
     const logout = async () => {
         await supabase.auth.signOut();

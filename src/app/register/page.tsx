@@ -48,23 +48,13 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            // UI-level timeout: 30 seconds max wait
-            const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
-                setTimeout(() => resolve('TIMEOUT'), 30000)
-            );
+            const success = await register(name, email, password);
 
-            const result = await Promise.race([
-                register(name, email, password),
-                timeoutPromise
-            ]);
-
-            if (result === 'TIMEOUT') {
-                // Timeout occurred - show message but account might have been created
-                setError("Registration is taking too long. Your account may have been created - try signing in.");
-            } else if (result === true) {
-                router.push("/my-bookings");
+            if (success) {
+                // The AuthContext will handle redirects via onAuthStateChange
+                // If email verification is required, user will see the toast message
+                console.log("Registration successful");
             }
-            // If result is false, the toast from AuthContext will show the error
         } catch (err: any) {
             console.error("Registration UI error:", err);
             setError("Something went wrong. Please try again.");

@@ -100,7 +100,7 @@ export default function ServicesPage() {
                     .from('services')
                     .select('*')
                     .eq('is_active', true)
-                    .order('name');
+                    .order('sort_order');
 
                 const result = await Promise.race([fetchPromise, timeoutPromise]);
 

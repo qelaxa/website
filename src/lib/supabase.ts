@@ -1,5 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js'
 
 // Singleton instance - shared across all components
 let supabaseInstance: SupabaseClient | null = null;
@@ -19,6 +18,13 @@ export const createClient = () => {
         console.log("Supabase Client initializing with URL:", url);
     }
 
-    supabaseInstance = createBrowserClient(url!, key!);
+    // Using @supabase/supabase-js which uses localStorage for session persistence
+    supabaseInstance = createSupabaseClient(url!, key!, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        }
+    });
     return supabaseInstance;
 }

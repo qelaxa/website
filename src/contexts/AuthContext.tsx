@@ -68,12 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (!sessionHandled) {
                     sessionHandled = true;
                     if (session?.user) {
-                        // Quick profile fetch with 2s timeout
+                        // Profile fetch with 15s timeout
                         let profile = null;
                         try {
                             const profileResult = await Promise.race([
                                 supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-                                new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 2000))
+                                new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 15000))
                             ]);
                             if (profileResult !== 'TIMEOUT' && !profileResult.error) {
                                 profile = profileResult.data;
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 sessionHandled = true;
                 setIsLoading(false);
             }
-        }, 5000);
+        }, 20000);
 
         // Listen for auth changes (for login/logout during app usage)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -126,12 +126,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             sessionHandled = true;
 
             if (session?.user) {
-                // Profile fetch with 3s timeout
+                // Profile fetch with 15s timeout
                 let profile = null;
                 try {
                     const result = await Promise.race([
                         supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-                        new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 3000))
+                        new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 15000))
                     ]);
                     if (result !== 'TIMEOUT' && !result.error) {
                         profile = result.data;

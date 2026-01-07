@@ -1,59 +1,65 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { Shirt, Sparkles, Bed, Building2, GraduationCap, Check, ArrowRight, Zap } from "lucide-react";
+import { Shirt, Sparkles, Bed, Building2, GraduationCap, Check, ArrowRight, Zap, Scissors, Tag, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase";
 
-const services = [
+// Icon mapping for dynamic services from Supabase
+const iconMap: Record<string, any> = {
+    "Shirt": Shirt,
+    "Sparkles": Sparkles,
+    "Bed": Bed,
+    "Building2": Building2,
+    "Scissors": Scissors,
+    "Tag": Tag,
+};
+
+// Gradient mapping based on category
+const gradientMap: Record<string, { gradient: string; bgLight: string }> = {
+    "wash_fold": { gradient: "from-primary to-cyan-500", bgLight: "bg-blue-50" },
+    "dry_cleaning": { gradient: "from-violet-500 to-purple-600", bgLight: "bg-violet-50" },
+    "household": { gradient: "from-emerald-500 to-teal-500", bgLight: "bg-emerald-50" },
+    "commercial": { gradient: "from-slate-600 to-slate-800", bgLight: "bg-slate-50" },
+    "default": { gradient: "from-gray-500 to-gray-700", bgLight: "bg-gray-50" },
+};
+
+// Static fallback data (used if Supabase fetch fails)
+const fallbackServices = [
     {
         id: "wash-fold",
-        title: "Wash & Fold",
+        name: "Wash & Fold",
         description: "Everyday laundry cleaned, dried, and expertly folded.",
-        price: "$2.00/lb",
-        priceNote: "$30 minimum",
-        icon: Shirt,
-        features: ["Same-day pickup available", "Eco-friendly detergents", "Custom folding preferences"],
-        popular: true,
-        gradient: "from-primary to-cyan-500",
-        bgLight: "bg-blue-50",
+        price: 2.00,
+        unit: "lb",
+        category: "wash_fold",
+        icon: "Shirt",
+        is_active: true,
     },
     {
         id: "dry-cleaning",
-        title: "Dry Cleaning",
+        name: "Dry Cleaning",
         description: "Professional care for delicate fabrics and formal wear.",
-        price: "From $8.00",
-        priceNote: "Per item",
-        icon: Sparkles,
-        features: ["Suits & formal wear", "Wedding dresses", "Leather & suede"],
-        popular: false,
-        gradient: "from-violet-500 to-purple-600",
-        bgLight: "bg-violet-50",
+        price: 8.00,
+        unit: "item",
+        category: "dry_cleaning",
+        icon: "Sparkles",
+        is_active: true,
     },
     {
         id: "large-items",
-        title: "Large Items & Bedding",
+        name: "Large Items & Bedding",
         description: "Comforters, rugs, sleeping bags, and oversized items.",
-        price: "From $20.00",
-        priceNote: "Flat rate per item",
-        icon: Bed,
-        features: ["Comforters & duvets", "Area rugs", "Sleeping bags"],
-        popular: false,
-        gradient: "from-emerald-500 to-teal-500",
-        bgLight: "bg-emerald-50",
-    },
-    {
-        id: "commercial",
-        title: "Commercial Linens",
-        description: "Restaurant, hotel, and business linen services.",
-        price: "Custom Quote",
-        priceNote: "Volume pricing",
-        icon: Building2,
-        features: ["Tablecloths & napkins", "Towels & sheets", "Uniforms"],
-        popular: false,
-        gradient: "from-slate-600 to-slate-800",
-        bgLight: "bg-slate-50",
+        price: 20.00,
+        unit: "item",
+        category: "household",
+        icon: "Bed",
+        is_active: true,
     },
 ];
 
@@ -66,7 +72,58 @@ const studentSpecial = {
     features: ["Use your .edu email", "Valid Student ID Required", "Perfect for dorm life"],
 };
 
+interface Service {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    unit: string;
+    category?: string;
+    icon?: string;
+    is_active?: boolean;
+}
+
 export default function ServicesPage() {
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
+    const supabase = createClient();
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('services')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('name');
+
+                if (error) throw error;
+                setServices(data || fallbackServices);
+            } catch (error) {
+                console.error("Error fetching services:", error);
+                setServices(fallbackServices);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchServices();
+    }, []);
+
+    const formatPrice = (price: number, unit: string) => {
+        if (unit === 'lb') return `$${price.toFixed(2)}/lb`;
+        if (unit === 'flat') return `$${price.toFixed(2)}`;
+        return `From $${price.toFixed(2)}`;
+    };
+
+    const getGradient = (category?: string) => {
+        return gradientMap[category || 'default'] || gradientMap['default'];
+    };
+
+    const getIcon = (iconName?: string) => {
+        return iconMap[iconName || 'Shirt'] || Shirt;
+    };
+
     return (
         <div className="flex flex-col min-h-screen">
             <Navbar />
@@ -98,64 +155,71 @@ export default function ServicesPage() {
                 {/* Services Grid */}
                 <section className="py-20 bg-white relative">
                     <div className="container mx-auto px-4">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {services.map((service, index) => (
-                                <Card
-                                    key={service.id}
-                                    className={`relative flex flex-col border-0 shadow-card hover:shadow-card-hover transition-all duration-500 hover:-translate-y-2 overflow-hidden animate-fade-in-up group ${service.popular ? 'ring-2 ring-primary/20' : ''}`}
-                                    style={{ animationDelay: `${index * 100}ms` }}
-                                >
-                                    {/* Top Gradient Bar */}
-                                    <div className={`h-1 bg-gradient-to-r ${service.gradient}`} />
+                        {loading ? (
+                            <div className="flex items-center justify-center py-20">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <span className="ml-3 text-gray-600">Loading services...</span>
+                            </div>
+                        ) : (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {services.map((service, index) => {
+                                    const { gradient, bgLight } = getGradient(service.category);
+                                    const IconComponent = getIcon(service.icon);
+                                    const isPopular = service.category === 'wash_fold';
 
-                                    {service.popular && (
-                                        <Badge className="absolute top-4 right-4 gradient-primary text-white border-0 shadow-lg animate-pulse-glow">
-                                            Most Popular
-                                        </Badge>
-                                    )}
-
-                                    <CardHeader className="pb-4">
-                                        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${service.gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                            <service.icon className="h-7 w-7 text-white" />
-                                        </div>
-                                        <CardTitle className="text-xl">{service.title}</CardTitle>
-                                        <CardDescription className="text-base">{service.description}</CardDescription>
-                                    </CardHeader>
-
-                                    <CardContent className="flex-1 space-y-6">
-                                        <div>
-                                            <span className={`text-3xl font-bold bg-gradient-to-r ${service.gradient} bg-clip-text text-transparent`}>
-                                                {service.price}
-                                            </span>
-                                            <span className="text-sm text-gray-500 ml-2">{service.priceNote}</span>
-                                        </div>
-                                        <ul className="space-y-3">
-                                            {service.features.map((feature, idx) => (
-                                                <li key={idx} className="flex items-center gap-3 text-sm text-gray-600">
-                                                    <div className={`w-5 h-5 rounded-full ${service.bgLight} flex items-center justify-center shrink-0`}>
-                                                        <Check className="h-3 w-3 text-emerald-600" />
-                                                    </div>
-                                                    {feature}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-
-                                    <CardFooter className="pt-4">
-                                        <Button
-                                            className={`w-full h-12 btn-premium ${service.popular ? `bg-gradient-to-r ${service.gradient} border-0 shadow-lg text-white` : ''}`}
-                                            variant={service.popular ? "default" : "outline"}
-                                            asChild
+                                    return (
+                                        <Card
+                                            key={service.id}
+                                            className={`relative flex flex-col border-0 shadow-card hover:shadow-card-hover transition-all duration-500 hover:-translate-y-2 overflow-hidden animate-fade-in-up group ${isPopular ? 'ring-2 ring-primary/20' : ''}`}
+                                            style={{ animationDelay: `${index * 100}ms` }}
                                         >
-                                            <Link href="/book" className="gap-2">
-                                                Book Now
-                                                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                            </Link>
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
+                                            {/* Top Gradient Bar */}
+                                            <div className={`h-1 bg-gradient-to-r ${gradient}`} />
+
+                                            {isPopular && (
+                                                <Badge className="absolute top-4 right-4 gradient-primary text-white border-0 shadow-lg animate-pulse-glow">
+                                                    Most Popular
+                                                </Badge>
+                                            )}
+
+                                            <CardHeader className="pb-4">
+                                                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                                    <IconComponent className="h-7 w-7 text-white" />
+                                                </div>
+                                                <CardTitle className="text-xl">{service.name}</CardTitle>
+                                                <CardDescription className="text-base">
+                                                    {service.description || "Professional laundry care service."}
+                                                </CardDescription>
+                                            </CardHeader>
+
+                                            <CardContent className="flex-1 space-y-6">
+                                                <div>
+                                                    <span className={`text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>
+                                                        {formatPrice(service.price, service.unit)}
+                                                    </span>
+                                                    <span className="text-sm text-gray-500 ml-2">
+                                                        {service.unit === 'lb' ? '$30 minimum' : 'Per item'}
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+
+                                            <CardFooter className="pt-4">
+                                                <Button
+                                                    className={`w-full h-12 btn-premium ${isPopular ? `bg-gradient-to-r ${gradient} border-0 shadow-lg text-white` : ''}`}
+                                                    variant={isPopular ? "default" : "outline"}
+                                                    asChild
+                                                >
+                                                    <Link href="/book" className="gap-2">
+                                                        Book Now
+                                                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                                    </Link>
+                                                </Button>
+                                            </CardFooter>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </section>
 

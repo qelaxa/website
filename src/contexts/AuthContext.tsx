@@ -45,19 +45,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session on mount and listen for changes
     useEffect(() => {
         const initializeAuth = async () => {
+            console.log("Initializing auth...");
             try {
                 // Get current session
                 const { data: { session } } = await supabase.auth.getSession();
+                console.log("Session check result:", session?.user?.email || "No session");
 
                 if (session?.user) {
-                    // Fetch profile data
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
+                    // Profile fetch with 10s timeout
+                    let profile = null;
+                    try {
+                        const profilePromise = supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+
+                        const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
+                            setTimeout(() => resolve('TIMEOUT'), 10000)
+                        );
+
+                        const result = await Promise.race([profilePromise, timeoutPromise]);
+
+                        if (result === 'TIMEOUT') {
+                            console.warn("initializeAuth: Profile fetch timed out, using basic data");
+                        } else {
+                            const { data, error } = result;
+                            if (!error) {
+                                profile = data;
+                                console.log("Profile loaded:", profile);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("initializeAuth: Profile fetch error:", err);
+                    }
 
                     setUser(mapUser(session.user, profile));
+                    console.log("User set from initializeAuth");
                 } else {
                     setUser(null);
                 }
@@ -66,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
             } finally {
                 setIsLoading(false);
+                console.log("initializeAuth complete, isLoading = false");
             }
         };
 

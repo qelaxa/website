@@ -91,14 +91,28 @@ export default function ServicesPage() {
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                const { data, error } = await supabase
+                // Add 5 second timeout
+                const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
+                    setTimeout(() => resolve('TIMEOUT'), 5000)
+                );
+
+                const fetchPromise = supabase
                     .from('services')
                     .select('*')
                     .eq('is_active', true)
                     .order('name');
 
+                const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+                if (result === 'TIMEOUT') {
+                    console.warn('Services fetch timed out, using fallback');
+                    setServices(fallbackServices);
+                    return;
+                }
+
+                const { data, error } = result;
                 if (error) throw error;
-                setServices(data || fallbackServices);
+                setServices(data && data.length > 0 ? data : fallbackServices);
             } catch (error) {
                 console.error("Error fetching services:", error);
                 setServices(fallbackServices);

@@ -44,61 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Check for existing session on mount and listen for changes
     useEffect(() => {
-        const initializeAuth = async () => {
-            console.log("Initializing auth...");
-            try {
-                // Get current session
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log("Session check result:", session?.user?.email || "No session");
+        console.log("Auth useEffect starting...");
 
-                if (session?.user) {
-                    // Profile fetch with 10s timeout
-                    let profile = null;
-                    try {
-                        const profilePromise = supabase
-                            .from('profiles')
-                            .select('*')
-                            .eq('id', session.user.id)
-                            .single();
-
-                        const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
-                            setTimeout(() => resolve('TIMEOUT'), 10000)
-                        );
-
-                        const result = await Promise.race([profilePromise, timeoutPromise]);
-
-                        if (result === 'TIMEOUT') {
-                            console.warn("initializeAuth: Profile fetch timed out, using basic data");
-                        } else {
-                            const { data, error } = result;
-                            if (!error) {
-                                profile = data;
-                                console.log("Profile loaded:", profile);
-                            }
-                        }
-                    } catch (err) {
-                        console.error("initializeAuth: Profile fetch error:", err);
-                    }
-
-                    setUser(mapUser(session.user, profile));
-                    console.log("User set from initializeAuth");
-                } else {
-                    setUser(null);
-                }
-            } catch (error) {
-                console.error("Auth initialization error:", error);
-                setUser(null);
-            } finally {
-                setIsLoading(false);
-                console.log("initializeAuth complete, isLoading = false");
-            }
-        };
-
-        // Initialize with safety timeout
-        initializeAuth();
+        // Set a timeout - if onAuthStateChange doesn't fire with a session within 5s, 
+        // assume no user is logged in
+        const timeoutId = setTimeout(() => {
+            console.log("Auth timeout reached - no session detected, setting isLoading false");
+            setIsLoading(false);
+        }, 5000);
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            // Clear the timeout since we got a response
+            clearTimeout(timeoutId);
             console.log("Auth state changed:", event, session?.user?.email);
 
             // FORCED REDIRECT FIRST (before any async operations that might hang)
@@ -113,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             if (session?.user) {
-                // Profile fetch with 10s timeout to prevent hanging
+                // Profile fetch with 5s timeout (shorter) to prevent hanging
                 let profile = null;
                 try {
                     const profilePromise = supabase
@@ -122,14 +80,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         .eq('id', session.user.id)
                         .single();
 
-                    const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
-                        setTimeout(() => resolve('TIMEOUT'), 10000)
+                    const profileTimeout = new Promise<'TIMEOUT'>((resolve) =>
+                        setTimeout(() => resolve('TIMEOUT'), 5000)
                     );
 
-                    const result = await Promise.race([profilePromise, timeoutPromise]);
+                    const result = await Promise.race([profilePromise, profileTimeout]);
 
                     if (result === 'TIMEOUT') {
-                        console.warn("Profile fetch timed out after 10s, using basic user data");
+                        console.warn("Profile fetch timed out after 5s, using basic user data");
                     } else {
                         const { data, error } = result;
                         if (error) {
@@ -154,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         return () => {
+            clearTimeout(timeoutId);
             subscription.unsubscribe();
         };
     }, [supabase]);

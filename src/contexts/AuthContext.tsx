@@ -33,12 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [supabase] = useState(() => createClient());
 
     // Map Supabase user to our internal User interface
+    // Priority for role: user_metadata.role > profileData.role > 'customer'
     const mapUser = (sbUser: SupabaseUser, profileData: any = null): User => {
+        // Check user_metadata first (this is in the JWT, no DB query needed)
+        const metadataRole = sbUser.user_metadata?.role;
+        const profileRole = profileData?.role;
+
+        // Use metadata role if present, otherwise profile role, otherwise default
+        const role = metadataRole || profileRole || 'customer';
+
+        console.log("mapUser - metadata role:", metadataRole, "profile role:", profileRole, "using:", role);
+
         return {
             id: sbUser.id,
             email: sbUser.email!,
             name: profileData?.full_name || sbUser.user_metadata?.full_name || "User",
-            role: profileData?.role || "customer",
+            role: role,
         };
     };
 
@@ -47,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Auth useEffect starting...");
         let sessionHandled = false;
 
-        // Try to get session with a 3s timeout
+        // Get session and set user immediately (role from user_metadata, no DB needed)
         const tryGetSession = async () => {
             try {
                 const sessionPromise = supabase.auth.getSession();
@@ -58,31 +68,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const result = await Promise.race([sessionPromise, timeoutPromise]);
 
                 if (result === 'TIMEOUT') {
-                    console.log("getSession timed out after 3s, waiting for onAuthStateChange...");
-                    return; // Let onAuthStateChange or the fallback timeout handle it
+                    console.log("getSession timed out after 3s");
+                    return;
                 }
 
                 const { data: { session } } = result;
                 console.log("getSession result:", session?.user?.email || "No session");
 
-                if (!sessionHandled) {
+                if (!sessionHandled && session?.user) {
                     sessionHandled = true;
-                    if (session?.user) {
-                        // Profile fetch with 15s timeout
-                        let profile = null;
-                        try {
-                            const profileResult = await Promise.race([
-                                supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-                                new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 15000))
-                            ]);
-                            if (profileResult !== 'TIMEOUT' && !profileResult.error) {
-                                profile = profileResult.data;
-                            }
-                        } catch (e) { }
 
-                        setUser(mapUser(session.user, profile));
-                        console.log("User set from getSession");
-                    }
+                    // IMMEDIATELY set user from session (role comes from user_metadata)
+                    // No need to wait for profile fetch
+                    setUser(mapUser(session.user, null));
+                    setIsLoading(false);
+                    console.log("User set immediately from session metadata");
+
+                    // Background: try to fetch profile for additional data (non-blocking)
+                    (async () => {
+                        try {
+                            const { data: profile, error } = await supabase
+                                .from('profiles').select('*').eq('id', session.user.id).single();
+                            if (profile && !error) {
+                                console.log("Background profile fetch succeeded:", profile);
+                                setUser(mapUser(session.user, profile));
+                            }
+                        } catch (e) {
+                            console.log("Background profile fetch failed:", e);
+                        }
+                    })();
+                } else if (!sessionHandled) {
+                    sessionHandled = true;
                     setIsLoading(false);
                 }
             } catch (error) {
@@ -126,44 +142,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             sessionHandled = true;
 
             if (session?.user) {
-                // Profile fetch with 15s timeout
-                let profile = null;
-                try {
-                    const result = await Promise.race([
-                        supabase.from('profiles').select('*').eq('id', session.user.id).single(),
-                        new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 15000))
-                    ]);
-                    if (result !== 'TIMEOUT' && !result.error) {
-                        profile = result.data;
-                        console.log("Profile fetched:", profile);
-                    } else if (result === 'TIMEOUT') {
-                        console.warn("Profile fetch timed out, preserving existing user data");
+                // IMMEDIATELY set user from session metadata (no blocking)
+                setUser(mapUser(session.user, null));
+                setIsLoading(false);
+                console.log("User set from onAuthStateChange (using metadata)");
+
+                // Background profile fetch (non-blocking)
+                (async () => {
+                    try {
+                        const { data: profile, error } = await supabase
+                            .from('profiles').select('*').eq('id', session.user.id).single();
+                        if (profile && !error) {
+                            console.log("Background profile fetch succeeded:", profile);
+                            setUser(mapUser(session.user, profile));
+                        }
+                    } catch (e) {
+                        console.log("Background profile fetch failed:", e);
                     }
-                } catch (err) {
-                    console.error("Profile fetch error:", err);
-                }
-
-                // If profile fetch failed but we already have a user with a role, preserve it
-                const existingUser = user; // current user state
-                let mappedUser = mapUser(session.user, profile);
-
-                if (!profile && existingUser && existingUser.id === session.user.id) {
-                    // Preserve existing role if profile fetch failed
-                    console.log("Preserving existing user role:", existingUser.role);
-                    mappedUser = {
-                        ...mappedUser,
-                        role: existingUser.role,
-                        name: existingUser.name !== 'User' ? existingUser.name : mappedUser.name,
-                    };
-                }
-
-                console.log("Mapped user:", mappedUser);
-                setUser(mappedUser);
+                })();
             } else {
                 setUser(null);
+                setIsLoading(false);
             }
-            setIsLoading(false);
-            console.log("Auth loading complete, isLoading set to false");
+            console.log("Auth loading complete");
         });
 
         return () => {

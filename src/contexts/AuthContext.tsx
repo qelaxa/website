@@ -136,12 +136,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     if (result !== 'TIMEOUT' && !result.error) {
                         profile = result.data;
                         console.log("Profile fetched:", profile);
+                    } else if (result === 'TIMEOUT') {
+                        console.warn("Profile fetch timed out, preserving existing user data");
                     }
                 } catch (err) {
                     console.error("Profile fetch error:", err);
                 }
 
-                const mappedUser = mapUser(session.user, profile);
+                // If profile fetch failed but we already have a user with a role, preserve it
+                const existingUser = user; // current user state
+                let mappedUser = mapUser(session.user, profile);
+
+                if (!profile && existingUser && existingUser.id === session.user.id) {
+                    // Preserve existing role if profile fetch failed
+                    console.log("Preserving existing user role:", existingUser.role);
+                    mappedUser = {
+                        ...mappedUser,
+                        role: existingUser.role,
+                        name: existingUser.name !== 'User' ? existingUser.name : mappedUser.name,
+                    };
+                }
+
                 console.log("Mapped user:", mappedUser);
                 setUser(mappedUser);
             } else {

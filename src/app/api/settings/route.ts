@@ -47,11 +47,21 @@ export async function GET() {
             .eq('key', 'site_settings')
             .single();
 
-        if (error || !data) {
-            // Return defaults if no settings found
+        // Log for debugging (will show in Vercel logs)
+        console.log('Settings fetch result:', { data: !!data, error: error?.message });
+
+        if (error) {
+            console.error('Supabase settings fetch error:', error.message, error.details);
+            // If table doesn't exist or no data, return defaults
             return NextResponse.json(defaultSettings);
         }
 
+        if (!data || !data.value) {
+            console.log('No settings in database, returning defaults');
+            return NextResponse.json(defaultSettings);
+        }
+
+        console.log('Returning settings from database');
         return NextResponse.json(data.value);
     } catch (error) {
         console.error('Error reading settings:', error);

@@ -91,9 +91,9 @@ export default function ServicesPage() {
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                // Add 5 second timeout
+                // Add 15 second timeout (Supabase free tier can be slow)
                 const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
-                    setTimeout(() => resolve('TIMEOUT'), 5000)
+                    setTimeout(() => resolve('TIMEOUT'), 15000)
                 );
 
                 const fetchPromise = supabase

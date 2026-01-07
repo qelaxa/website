@@ -45,57 +45,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session on mount and listen for changes
     useEffect(() => {
         console.log("Auth useEffect starting...");
+        let sessionHandled = false;
 
-        // Set a timeout - if onAuthStateChange doesn't fire with a session within 5s, 
-        // assume no user is logged in
-        const timeoutId = setTimeout(() => {
-            console.log("Auth timeout reached - no session detected, setting isLoading false");
-            setIsLoading(false);
+        // Try to get session with a 3s timeout
+        const tryGetSession = async () => {
+            try {
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
+                    setTimeout(() => resolve('TIMEOUT'), 3000)
+                );
+
+                const result = await Promise.race([sessionPromise, timeoutPromise]);
+
+                if (result === 'TIMEOUT') {
+                    console.log("getSession timed out after 3s, waiting for onAuthStateChange...");
+                    return; // Let onAuthStateChange or the fallback timeout handle it
+                }
+
+                const { data: { session } } = result;
+                console.log("getSession result:", session?.user?.email || "No session");
+
+                if (!sessionHandled) {
+                    sessionHandled = true;
+                    if (session?.user) {
+                        // Quick profile fetch with 2s timeout
+                        let profile = null;
+                        try {
+                            const profileResult = await Promise.race([
+                                supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+                                new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 2000))
+                            ]);
+                            if (profileResult !== 'TIMEOUT' && !profileResult.error) {
+                                profile = profileResult.data;
+                            }
+                        } catch (e) { }
+
+                        setUser(mapUser(session.user, profile));
+                        console.log("User set from getSession");
+                    }
+                    setIsLoading(false);
+                }
+            } catch (error) {
+                console.error("getSession error:", error);
+            }
+        };
+
+        tryGetSession();
+
+        // Fallback timeout - if nothing works in 5s, assume no session
+        const fallbackTimeout = setTimeout(() => {
+            if (!sessionHandled) {
+                console.log("Fallback timeout - no session, setting isLoading false");
+                sessionHandled = true;
+                setIsLoading(false);
+            }
         }, 5000);
 
-        // Listen for auth changes
+        // Listen for auth changes (for login/logout during app usage)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // Clear the timeout since we got a response
-            clearTimeout(timeoutId);
+            clearTimeout(fallbackTimeout);
             console.log("Auth state changed:", event, session?.user?.email);
 
-            // FORCED REDIRECT FIRST (before any async operations that might hang)
+            // FORCED REDIRECT on login from auth pages
             if (event === 'SIGNED_IN' && session?.user && typeof window !== 'undefined') {
                 const currentPath = window.location.pathname;
                 console.log("SIGNED_IN detected, current path:", currentPath);
                 if (currentPath === '/login' || currentPath === '/register') {
                     console.log("Forcing redirect to /my-bookings via window.location NOW");
                     window.location.replace('/my-bookings');
-                    return; // Exit early, don't wait for profile fetch
+                    return;
                 }
             }
 
+            // Skip if already handled by getSession
+            if (sessionHandled && event === 'INITIAL_SESSION') {
+                console.log("Session already handled by getSession, skipping INITIAL_SESSION");
+                return;
+            }
+
+            sessionHandled = true;
+
             if (session?.user) {
-                // Profile fetch with 5s timeout (shorter) to prevent hanging
+                // Profile fetch with 3s timeout
                 let profile = null;
                 try {
-                    const profilePromise = supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    const profileTimeout = new Promise<'TIMEOUT'>((resolve) =>
-                        setTimeout(() => resolve('TIMEOUT'), 5000)
-                    );
-
-                    const result = await Promise.race([profilePromise, profileTimeout]);
-
-                    if (result === 'TIMEOUT') {
-                        console.warn("Profile fetch timed out after 5s, using basic user data");
-                    } else {
-                        const { data, error } = result;
-                        if (error) {
-                            console.error("Failed to fetch profile:", error);
-                        } else {
-                            profile = data;
-                            console.log("Profile fetched:", profile);
-                        }
+                    const result = await Promise.race([
+                        supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+                        new Promise<'TIMEOUT'>((r) => setTimeout(() => r('TIMEOUT'), 3000))
+                    ]);
+                    if (result !== 'TIMEOUT' && !result.error) {
+                        profile = result.data;
+                        console.log("Profile fetched:", profile);
                     }
                 } catch (err) {
                     console.error("Profile fetch error:", err);
@@ -112,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         return () => {
-            clearTimeout(timeoutId);
+            clearTimeout(fallbackTimeout);
             subscription.unsubscribe();
         };
     }, [supabase]);

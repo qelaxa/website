@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     Menu,
     Sparkles,
+    Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -20,6 +21,7 @@ import { useState } from "react";
 const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/orders", label: "Orders", icon: Package },
+    { href: "/admin/services", label: "Services", icon: Tag },
     { href: "/admin/stains", label: "Stain Requests", icon: Sparkles },
     { href: "/admin/customers", label: "Customers", icon: Users },
     { href: "/admin/settings", label: "Settings", icon: Settings },

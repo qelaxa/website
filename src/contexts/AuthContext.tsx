@@ -82,23 +82,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.log("SIGNED_IN detected, current path:", currentPath);
                 if (currentPath === '/login' || currentPath === '/register') {
                     console.log("Forcing redirect to /my-bookings via window.location NOW");
-                    // Use replace to not add to history, and do it immediately
                     window.location.replace('/my-bookings');
                     return; // Exit early, don't wait for profile fetch
                 }
             }
 
             if (session?.user) {
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+                // Profile fetch with 10s timeout to prevent hanging
+                let profile = null;
+                try {
+                    const profilePromise = supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
 
-                console.log("Profile fetch result:", { profile, profileError, userId: session.user.id });
+                    const timeoutPromise = new Promise<'TIMEOUT'>((resolve) =>
+                        setTimeout(() => resolve('TIMEOUT'), 10000)
+                    );
 
-                if (profileError) {
-                    console.error("Failed to fetch profile:", profileError);
+                    const result = await Promise.race([profilePromise, timeoutPromise]);
+
+                    if (result === 'TIMEOUT') {
+                        console.warn("Profile fetch timed out after 10s, using basic user data");
+                    } else {
+                        const { data, error } = result;
+                        if (error) {
+                            console.error("Failed to fetch profile:", error);
+                        } else {
+                            profile = data;
+                            console.log("Profile fetched:", profile);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Profile fetch error:", err);
                 }
 
                 const mappedUser = mapUser(session.user, profile);
@@ -108,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
             }
             setIsLoading(false);
+            console.log("Auth loading complete, isLoading set to false");
         });
 
         return () => {

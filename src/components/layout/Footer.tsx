@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import Image from "next/image";
-import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Sparkles } from "lucide-react";
+import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from "lucide-react";
+import { useSettings } from "@/hooks/useSettings";
 
 export function Footer() {
+    const { settings } = useSettings();
+
     return (
         <footer className="relative overflow-hidden">
             {/* Gradient Background */}
@@ -20,10 +24,9 @@ export function Footer() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
                         {/* Brand Column */}
                         <div className="lg:col-span-1">
-                            <h3 className="text-2xl font-bold text-white mb-6">LEQAXA</h3>
+                            <h3 className="text-2xl font-bold text-white mb-6">{settings.business.name}</h3>
                             <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-xs break-words">
-                                Premium laundry concierge service for Northwest Ohio.
-                                From your doorstep to done—expertly cleaned, carefully folded.
+                                {settings.business.tagline}. Premium laundry concierge service for Northwest Ohio.
                             </p>
 
                             {/* Social Links */}
@@ -72,19 +75,18 @@ export function Footer() {
                             </ul>
                         </div>
 
-                        {/* Company Column */}
+                        {/* Quick Links Column */}
                         <div>
                             <h4 className="text-white font-semibold mb-6 flex items-center gap-2">
                                 <div className="w-1 h-4 rounded-full gradient-primary" />
-                                Company
+                                Quick Links
                             </h4>
                             <ul className="space-y-3">
                                 {[
-                                    { label: "About Us", href: "#" },
-                                    { label: "Service Area", href: "#service-area" },
-                                    { label: "Careers", href: "#" },
-                                    { label: "Contact", href: "#" },
+                                    { label: "Schedule Pickup", href: "/book" },
                                     { label: "Care Menu", href: "/preferences" },
+                                    { label: "My Orders", href: "/my-bookings" },
+                                    { label: "Contact Us", href: "#" },
                                 ].map((link) => (
                                     <li key={link.label}>
                                         <Link
@@ -108,31 +110,31 @@ export function Footer() {
                             <ul className="space-y-4">
                                 <li>
                                     <a
-                                        href="mailto:hello@leqaxa.com"
+                                        href={`mailto:${settings.business.email}`}
                                         className="text-gray-400 text-sm hover:text-white transition-colors duration-300 flex items-center gap-3 group"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Mail className="h-4 w-4" />
                                         </div>
-                                        hello@leqaxa.com
+                                        {settings.business.email}
                                     </a>
                                 </li>
                                 <li>
                                     <a
-                                        href="tel:4195550123"
+                                        href={`tel:${settings.business.phone.replace(/[^0-9]/g, '')}`}
                                         className="text-gray-400 text-sm hover:text-white transition-colors duration-300 flex items-center gap-3 group"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Phone className="h-4 w-4" />
                                         </div>
-                                        (419) 555-0123
+                                        {settings.business.phone}
                                     </a>
                                 </li>
                                 <li className="flex items-start gap-3 text-gray-400 text-sm">
                                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                                         <MapPin className="h-4 w-4" />
                                     </div>
-                                    <span>Toledo, Bowling Green & Northwest Ohio</span>
+                                    <span>{settings.business.address}</span>
                                 </li>
                             </ul>
                         </div>
@@ -144,7 +146,7 @@ export function Footer() {
                     <div className="container mx-auto px-4 py-6">
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
                             <p>
-                                © {new Date().getFullYear()} LEQAXA Laundry Northwest Ohio. All rights reserved.
+                                © {new Date().getFullYear()} {settings.business.name}. All rights reserved.
                             </p>
                             <div className="flex gap-6">
                                 <Link href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>

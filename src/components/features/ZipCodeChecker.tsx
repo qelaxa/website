@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, X, MapPin } from "lucide-react";
+import { Check, X, MapPin, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSettings, checkZipCode } from "@/hooks/useSettings";
 
 type RegionStatus = "available" | "surcharge" | "unavailable";
 
@@ -13,29 +14,28 @@ export function ZipCodeChecker() {
     const [zip, setZip] = useState("");
     const [status, setStatus] = useState<RegionStatus | null>(null);
     const [message, setMessage] = useState("");
+    const { settings, loading } = useSettings();
 
-    const checkZip = () => {
-        // Toledo: 436xx
-        if (zip.startsWith("436")) {
-            setStatus("available");
-            setMessage("Great news! You are in our standard service area.");
+    const handleCheckZip = () => {
+        if (zip.length !== 5) {
+            setStatus("unavailable");
+            setMessage("Please enter a valid 5-digit ZIP code.");
             return;
         }
-        // Bowling Green: 43402, 43403, Maumee: 43537
-        if (["43402", "43403", "43537"].includes(zip)) {
+
+        // Use settings to check ZIP code
+        const result = checkZipCode(zip, settings);
+
+        if (result.zone === 'standard') {
             setStatus("available");
             setMessage("Great news! You are in our standard service area.");
-            return;
-        }
-        // Perrysburg: 43551, Sylvania: 43560 ($5 Surcharge)
-        if (["43551", "43560"].includes(zip)) {
+        } else if (result.zone === 'extended') {
             setStatus("surcharge");
-            setMessage("We serve your area with a small $5 delivery surcharge.");
-            return;
+            setMessage(`We serve your area with a small $${result.surcharge} delivery surcharge.`);
+        } else {
+            setStatus("unavailable");
+            setMessage("Sorry, we don't serve this area yet. Check back soon!");
         }
-
-        setStatus("unavailable");
-        setMessage("Sorry, we don't serve this area yet. Check back soon!");
     };
 
     return (
@@ -54,11 +54,14 @@ export function ZipCodeChecker() {
                     <Input
                         placeholder="Enter Zip Code (e.g. 43606)"
                         value={zip}
-                        onChange={(e) => setZip(e.target.value)}
+                        onChange={(e) => setZip(e.target.value.replace(/\D/g, ''))}
                         className="text-lg"
                         maxLength={5}
+                        onKeyPress={(e) => e.key === 'Enter' && handleCheckZip()}
                     />
-                    <Button onClick={checkZip}>Check</Button>
+                    <Button onClick={handleCheckZip} disabled={loading}>
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Check'}
+                    </Button>
                 </div>
 
                 {status && (
@@ -73,7 +76,7 @@ export function ZipCodeChecker() {
                         {status === "unavailable" && <X className="h-5 w-5 shrink-0" />}
                         <div>
                             <p className="font-bold">
-                                {status === "available" ? "available" : status === "surcharge" ? "Available ($5 Surcharge)" : "Unavailable"}
+                                {status === "available" ? "Available" : status === "surcharge" ? "Available (Surcharge)" : "Unavailable"}
                             </p>
                             <p className="font-normal mt-0.5">{message}</p>
                         </div>
